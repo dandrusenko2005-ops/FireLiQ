@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FireLiQ | Premium Store</title>
+    <title>FireLiQ Store</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Firebase SDK (Compat Version - самая надежная для HTML) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -13,139 +14,160 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
 
     <style>
-        :root { --fire: #ff4d00; --gold: #fbbf24; --dark: #0f0f0f; }
-        body { background: var(--dark); color: white; font-family: 'Nunito', sans-serif; -webkit-tap-highlight-color: transparent; }
+        :root { --fire: #ff4d00; --gold: #fbbf24; --dark: #121212; }
+        body { 
+            background: var(--dark); 
+            color: white; 
+            font-family: 'Nunito', sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        
         .fire-gradient { background: linear-gradient(135deg, var(--fire) 0%, var(--gold) 100%); }
+        .glass { background: rgba(18, 18, 18, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .active-tab { background: #ffcc00 !important; color: black !important; font-weight: 900; transform: scale(1.05); }
         .hidden { display: none !important; }
-        .input-flat { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; outline: none; width: 100%; color: white; }
-        .active-tab { background: var(--gold) !important; color: black !important; }
-        .btn-active:active { transform: scale(0.96); opacity: 0.8; }
+        
+        .btn-push { transition: all 0.1s; box-shadow: 0 4px 0px #993d00; }
+        .btn-push:active { transform: translateY(3px); box-shadow: 0 1px 0px #993d00; }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .input-flat {
+            background: #1e1e1e;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            padding: 1rem;
+            outline: none;
+            width: 100%;
+            color: white;
+            font-weight: 700;
+        }
+        .input-flat:focus { border-color: var(--gold); }
     </style>
 </head>
 <body>
 
-    <nav class="sticky top-0 z-50 bg-[#0f0f0f]/90 backdrop-blur-lg border-b border-white/5 p-4 flex justify-between items-center">
-        <div id="admin-trigger" class="flex items-center gap-2 cursor-pointer">
+    <!-- Header -->
+    <nav class="sticky top-0 z-50 glass p-4 flex justify-between items-center">
+        <div id="logo-trigger" class="flex items-center gap-2 cursor-pointer select-none">
             <span class="text-2xl">🔥</span>
-            <h1 class="text-2xl font-black italic tracking-tighter uppercase">Fire<span class="text-[#fbbf24]">Liq</span></h1>
+            <h1 class="text-2xl font-black italic tracking-tighter">
+                FIRE<span class="text-[#fbbf24]">LIQ</span>
+            </h1>
         </div>
-        <button onclick="window.showView('cart')" class="bg-[#1a1a1a] p-3 rounded-xl relative btn-active">
-            🛒 <span id="cart-count" class="hidden absolute -top-1 -right-1 bg-white text-black text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">0</span>
+        <button onclick="window.showView('cart')" class="relative bg-[#1e1e1e] p-3 rounded-2xl border border-white/5 active:scale-95 transition-transform">
+            🛒 <span id="cart-count" class="hidden absolute -top-1 -right-1 bg-white text-black text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-black">0</span>
         </button>
     </nav>
 
-    <div id="category-bar" class="p-4 flex gap-2 overflow-x-auto no-scrollbar"></div>
+    <!-- Categories -->
+    <div id="category-bar" class="p-4 flex gap-3 overflow-x-auto no-scrollbar"></div>
 
     <main class="p-4 pb-32">
+        <!-- Shop -->
         <div id="shop-view" class="grid grid-cols-2 gap-3"></div>
 
-        <!-- Корзина -->
-        <div id="cart-view" class="hidden space-y-4">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Корзина</h2>
-                <button onclick="window.showView('shop')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">НАЗАД</button>
-            </div>
-            <div id="cart-items" class="space-y-2"></div>
-            <div class="bg-[#1a1a1a] p-6 rounded-3xl mt-4">
-                <div class="flex justify-between items-center mb-4">
-                    <span class="text-zinc-500 font-bold text-xs uppercase">Итого</span>
-                    <span id="total-price" class="text-2xl font-black">0€</span>
+        <!-- Cart -->
+        <div id="cart-view" class="hidden space-y-6">
+            <h2 class="text-3xl font-black italic text-[#fbbf24]">Корзина</h2>
+            <div id="cart-items" class="space-y-3"></div>
+            <div class="bg-[#1e1e1e] p-6 rounded-[2rem] border border-white/5">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-zinc-500 font-bold uppercase text-[10px] tracking-widest">К оплате:</span>
+                    <span id="total-price" class="text-2xl font-black text-white">0€</span>
                 </div>
-                <button onclick="window.showView('checkout')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-active">Оформить заказ</button>
+                <button onclick="window.showView('checkout')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push text-lg">Оформить</button>
             </div>
+            <button onclick="window.showView('shop')" class="w-full text-zinc-500 font-bold text-sm uppercase py-2">← Вернуться</button>
         </div>
 
-        <!-- Оформление -->
+        <!-- Checkout -->
         <div id="checkout-view" class="hidden space-y-4">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Доставка</h2>
-                <button onclick="window.showView('cart')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">НАЗАД</button>
-            </div>
-            <input id="f-name" class="input-flat" placeholder="Имя">
+            <h2 class="text-3xl font-black italic text-[#fbbf24]">Доставка</h2>
+            <input id="f-name" class="input-flat" placeholder="Ваше Имя">
             <input id="f-phone" class="input-flat" placeholder="Телефон">
-            <input id="f-addr" class="input-flat" placeholder="Адрес">
-            <button onclick="window.showView('payment')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-active">Перейти к оплате</button>
+            <input id="f-addr" class="input-flat" placeholder="Город, Улица, Дом, Индекс">
+            <button onclick="window.showView('payment')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push mt-2">К оплате</button>
+            <button onclick="window.showView('cart')" class="w-full text-zinc-500 font-bold text-xs uppercase">Назад</button>
         </div>
 
-        <!-- Оплата -->
-        <div id="payment-view" class="hidden space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Оплата</h2>
-                <button onclick="window.showView('checkout')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">НАЗАД</button>
-            </div>
-            <div class="bg-[#1a1a1a] p-8 rounded-3xl border border-white/5 text-center">
-                <p class="text-[10px] text-zinc-500 uppercase font-black mb-4">Реквизиты для перевода:</p>
-                <div class="text-xl font-black text-white tracking-widest mb-6" id="display-card-num">Загрузка...</div>
-                <div class="flex justify-between border-t border-white/5 pt-4 text-left">
-                    <span class="text-zinc-500">Сумма:</span>
+        <!-- Payment -->
+        <div id="payment-view" class="hidden text-center space-y-6">
+            <h2 class="text-3xl font-black italic text-[#fbbf24]">Оплата</h2>
+            <div class="bg-[#1e1e1e] p-8 rounded-[2rem] border border-white/5 shadow-2xl">
+                <p class="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Перевод на карту:</p>
+                <div class="text-xl font-black text-white tracking-widest mb-6 select-all" id="display-card-num">....</div>
+                <div class="flex justify-between border-t border-white/5 pt-4">
+                    <span class="text-zinc-500 font-bold uppercase text-xs">Сумма:</span>
                     <span id="payment-total" class="font-black text-white text-xl">0€</span>
                 </div>
             </div>
-            <button onclick="window.sendOrder()" id="confirm-btn" class="w-full py-5 fire-gradient text-black font-black uppercase rounded-xl btn-active">Подтвердить оплату</button>
+            <button onclick="window.sendOrder()" id="confirm-btn" class="w-full py-5 fire-gradient text-black font-black uppercase rounded-xl btn-push text-lg">Я оплатил</button>
+            <button onclick="window.showView('checkout')" class="text-zinc-500 font-bold text-xs uppercase">Назад</button>
         </div>
 
-        <!-- Успех -->
-        <div id="success-view" class="hidden text-center py-20">
-            <div class="text-6xl mb-4">✅</div>
-            <h2 class="text-2xl font-black text-[#fbbf24]">ЗАКАЗ ПРИНЯТ</h2>
-            <p class="text-zinc-500 mt-2">Номер заказа: <span id="order-num" class="text-white">#0</span></p>
-            <button onclick="window.showView('shop')" class="mt-8 px-10 py-3 bg-white text-black font-black rounded-xl text-xs uppercase">Вернуться</button>
+        <!-- Success -->
+        <div id="success-view" class="hidden flex flex-col items-center justify-center text-center py-20 px-6">
+            <div class="text-7xl mb-6">✅</div>
+            <h2 class="text-3xl font-black italic mb-2 text-[#fbbf24]">ПРИНЯТО!</h2>
+            <p class="text-zinc-400 font-bold mb-10 text-sm">Ваш заказ <span id="order-num" class="text-white">#0</span> в обработке.</p>
+            <button onclick="window.showView('shop')" class="px-10 py-4 bg-white text-black rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform">В магазин</button>
         </div>
 
-        <!-- Админка -->
-        <div id="admin-view" class="hidden space-y-6">
-            <div class="flex justify-between items-center">
+        <!-- Admin -->
+        <div id="admin-view" class="hidden space-y-8 pb-20">
+            <div class="flex justify-between items-center bg-[#1e1e1e] p-4 rounded-2xl">
                 <h2 class="text-[#fbbf24] font-black uppercase text-xl italic">Панель управления</h2>
                 <button onclick="window.showView('shop')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">ВЫХОД</button>
             </div>
 
             <!-- Реквизиты -->
-            <div class="bg-[#1a1a1a] p-5 rounded-2xl space-y-3">
-                <p class="text-[10px] font-black text-zinc-500 uppercase">Настройка карты</p>
+            <div class="bg-[#1e1e1e] p-5 rounded-2xl space-y-3">
+                <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Реквизиты карты</p>
                 <div class="flex gap-2">
-                    <input id="admin-card-input" class="input-flat" placeholder="0000 0000...">
-                    <button onclick="window.updateSettings()" class="bg-white text-black px-4 rounded-xl font-black text-xs uppercase btn-active">OK</button>
+                    <input id="admin-card-input" class="input-flat text-sm" placeholder="Номер карты">
+                    <button onclick="window.updateSettings()" class="bg-white text-black px-5 rounded-xl font-black text-[10px] uppercase">ОК</button>
                 </div>
             </div>
 
             <!-- Категории -->
-            <div class="bg-[#1a1a1a] p-5 rounded-2xl space-y-4">
-                <p class="text-[10px] font-black text-zinc-500 uppercase">Классификации</p>
+            <div class="bg-[#1e1e1e] p-5 rounded-2xl space-y-4">
+                <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Классификации</p>
                 <div class="flex gap-2">
-                    <input id="new-cat-name" class="input-flat" placeholder="Название">
-                    <button onclick="window.addCategory()" class="bg-[#fbbf24] text-black px-6 rounded-xl font-black btn-active">+</button>
+                    <input id="new-cat-name" class="input-flat text-sm" placeholder="Название (напр. Ягоды)">
+                    <button onclick="window.addCategory()" class="bg-[#fbbf24] text-black px-5 rounded-xl font-black text-xl">+</button>
                 </div>
                 <div id="admin-categories-list" class="space-y-2"></div>
             </div>
 
             <!-- Товары -->
-            <div class="bg-[#1a1a1a] p-5 rounded-2xl space-y-4">
-                <p class="text-[10px] font-black text-zinc-500 uppercase">Добавить продукт</p>
-                <input id="prod-name" class="input-flat" placeholder="Имя товара">
+            <div class="bg-[#1e1e1e] p-5 rounded-2xl space-y-4">
+                <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Новый товар</p>
+                <input id="prod-name" class="input-flat text-sm" placeholder="Название товара">
                 <div class="flex gap-2">
-                    <input id="prod-price" class="input-flat w-1/2" placeholder="Цена €">
-                    <input id="prod-stock" type="number" class="input-flat w-1/2" placeholder="Склад">
+                    <input id="prod-price" class="input-flat text-sm w-1/2" placeholder="Цена €">
+                    <input id="prod-stock" type="number" class="input-flat text-sm w-1/2" placeholder="Кол-во">
                 </div>
-                <select id="prod-cat" class="input-flat text-zinc-400 font-bold"></select>
-                <button onclick="window.addProduct()" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-active">Опубликовать</button>
+                <select id="prod-cat" class="input-flat text-sm text-zinc-400 font-bold uppercase"></select>
+                <button onclick="window.addProduct()" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push">Опубликовать</button>
             </div>
 
-            <div id="admin-products-list" class="space-y-2 pb-20"></div>
+            <div id="admin-products-list" class="space-y-3"></div>
         </div>
     </main>
 
-    <!-- Вход -->
-    <div id="auth-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-6">
-        <div class="bg-[#1a1a1a] p-8 rounded-[2rem] w-full max-w-xs space-y-6 text-center border border-white/5">
-            <p class="text-xl font-black uppercase text-[#fbbf24]">Admin Access</p>
-            <input id="adm-pass" type="password" class="w-full bg-black p-4 rounded-xl text-center font-black outline-none tracking-widest text-2xl border border-white/5" placeholder="••••">
-            <button onclick="window.tryLogin()" class="w-full py-4 fire-gradient text-black rounded-xl font-black uppercase btn-active">Войти</button>
-            <button onclick="window.closeAuth()" class="text-zinc-600 font-bold text-[10px] uppercase">Закрыть</button>
+    <!-- Auth -->
+    <div id="auth-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-6 backdrop-blur-sm">
+        <div class="bg-[#1e1e1e] p-10 rounded-[2rem] w-full max-w-xs space-y-6 text-center border border-white/10 shadow-2xl">
+            <span class="text-4xl">🔐</span>
+            <input id="adm-pass" type="password" class="w-full bg-black/50 p-4 rounded-xl text-center font-black outline-none tracking-[5px] text-xl border border-white/5 text-white" placeholder="••••">
+            <button onclick="window.tryLogin()" class="w-full py-4 fire-gradient text-black rounded-xl font-black uppercase text-lg btn-push">Войти</button>
+            <button onclick="window.closeAuth()" class="text-zinc-500 font-bold text-[10px] uppercase tracking-widest">Закрыть</button>
         </div>
     </div>
 
     <script>
+        // === ВСТАВЬ СВОЙ API KEY ===
         const firebaseConfig = {
             apiKey: "AIzaSyAb8gtyyzMqxEOiK9f9lOWN7stwAbLzakc",
             authDomain: "fireliq-15259.firebaseapp.com",
@@ -154,77 +176,148 @@
             messagingSenderId: "752537372890",
             appId: "1:752537372890:web:1afa9447329ea31ec57de3"
         };
+        const TG = { token: "8443611271:AAHQiXYvsOGI5FuoEB-Q0QTgdKleskhS1QQ", chatId: "8480602033" };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        auth.signInAnonymously().catch(e => console.error("Auth error:", e));
+        auth.signInAnonymously().catch(console.error);
 
-        const TG = { token: "8443611271:AAHQiXYvsOGI5FuoEB-Q0QTgdKleskhS1QQ", chatId: "8480602033" };
         let products = [], categories = [], cart = [], settings = {cardNum: ''}, curCat = 'Все', clicks = 0;
 
+        // --- NAVIGATION ---
         window.showView = (view) => {
             ['shop', 'cart', 'checkout', 'admin', 'success', 'payment'].forEach(v => {
-                const el = document.getElementById(v + '-view');
-                if (el) el.classList.add('hidden');
+                document.getElementById(v + '-view').classList.add('hidden');
             });
             document.getElementById(view + '-view').classList.remove('hidden');
             document.getElementById('category-bar').classList.toggle('hidden', view !== 'shop');
+            
             if (view === 'payment') {
-                document.getElementById('display-card-num').innerText = settings.cardNum || 'Не указана';
-                document.getElementById('payment-total').innerText = cart.reduce((a, b) => a + Number(b.price), 0) + '€';
+                const total = cart.reduce((a, b) => a + (Number(b.price) * b.qty), 0);
+                document.getElementById('payment-total').innerText = total + '€';
+                document.getElementById('display-card-num').innerText = settings.cardNum || '....';
             }
             window.scrollTo(0,0);
         };
 
         window.setCat = (c) => { curCat = c; render(); };
-        window.buy = (id) => {
-            const p = products.find(x => x.id === id);
-            if (!p || (cart.filter(c => c.id === id).length >= p.stock)) return;
-            cart.push(p); updateCart();
-        };
-        window.removeFromCart = (i) => { cart.splice(i, 1); updateCart(); };
 
-        function updateCart() {
-            const count = document.getElementById('cart-count');
-            count.innerText = cart.length;
-            count.classList.toggle('hidden', cart.length === 0);
-            document.getElementById('cart-items').innerHTML = cart.map((item, i) => `
-                <div class="bg-[#1a1a1a] p-4 rounded-xl flex justify-between items-center border border-white/5">
-                    <div><p class="text-[8px] text-[#fbbf24] font-black uppercase">${item.category}</p><p class="font-bold text-sm uppercase">${item.name}</p></div>
-                    <button onclick="window.removeFromCart(${i})" class="text-red-500 font-black p-2">✕</button>
+        // --- CART LOGIC (MICRO-INTERACTIONS) ---
+        window.updateCartQty = (id, delta) => {
+            const pIndex = cart.findIndex(c => c.id === id);
+            if (pIndex > -1) {
+                const p = cart[pIndex];
+                const newQty = p.qty + delta;
+                
+                // Проверка склада
+                const stock = products.find(prod => prod.id === id).stock;
+                
+                if (newQty > stock) return; // Нельзя больше склада
+                if (newQty <= 0) {
+                    cart.splice(pIndex, 1); // Удалить если 0
+                } else {
+                    cart[pIndex].qty = newQty;
+                }
+            } else if (delta > 0) {
+                // Добавление нового
+                const p = products.find(x => x.id === id);
+                if (p && p.stock > 0) {
+                    cart.push({ ...p, qty: 1 });
+                }
+            }
+            updateUI();
+        };
+
+        // Специальная функция для кнопки "+" на пустой карточке
+        window.addToCart = (id) => {
+            window.updateCartQty(id, 1);
+        };
+
+        function updateUI() {
+            // Обновляем счетчик
+            const totalQty = cart.reduce((a, b) => a + b.qty, 0);
+            const countEl = document.getElementById('cart-count');
+            countEl.innerText = totalQty;
+            countEl.classList.toggle('hidden', totalQty === 0);
+
+            // Обновляем корзину
+            const list = document.getElementById('cart-items');
+            list.innerHTML = cart.map(item => `
+                <div class="bg-[#1e1e1e] p-4 rounded-2xl flex justify-between items-center border border-white/5">
+                    <div>
+                        <p class="text-[8px] text-[#fbbf24] font-black uppercase mb-1">${item.category}</p>
+                        <p class="font-bold text-sm text-white uppercase">${item.name}</p>
+                    </div>
+                    <div class="flex items-center gap-3 bg-black/40 rounded-lg p-1">
+                        <button onclick="window.updateCartQty('${item.id}', -1)" class="w-8 h-8 text-white font-bold">-</button>
+                        <span class="text-[#fbbf24] font-black text-sm">${item.qty}</span>
+                        <button onclick="window.updateCartQty('${item.id}', 1)" class="w-8 h-8 text-white font-bold">+</button>
+                    </div>
                 </div>
             `).join('');
-            document.getElementById('total-price').innerText = cart.reduce((a, b) => a + Number(b.price), 0) + '€';
+            
+            const totalPrice = cart.reduce((a, b) => a + (Number(b.price) * b.qty), 0);
+            document.getElementById('total-price').innerText = totalPrice + '€';
+
+            // Перерисовываем магазин, чтобы обновить кнопки +/-
+            if (!document.getElementById('shop-view').classList.contains('hidden')) {
+                renderShop();
+            }
         }
 
+        // --- ORDER ---
+        window.sendOrder = async () => {
+            const btn = document.getElementById('confirm-btn');
+            const n = document.getElementById('f-name').value, ph = document.getElementById('f-phone').value, ad = document.getElementById('f-addr').value;
+            if(!n || !ph) return alert("Заполните данные!");
+            
+            btn.disabled = true; btn.innerText = "ОБРАБОТКА...";
+            
+            try {
+                // Списываем со склада
+                const batch = db.batch();
+                cart.forEach(item => {
+                    const ref = db.collection('products').document(item.id);
+                    batch.update(ref, { stock: firebase.firestore.FieldValue.increment(-item.qty) });
+                });
+                await batch.commit();
+
+                // Телеграм
+                const orderID = Math.floor(Math.random()*9000)+1000;
+                const total = cart.reduce((a,b)=>a+(Number(b.price)*b.qty),0);
+                const text = `🔥 *ЗАКАЗ №${orderID}*\n\n👤 ${n}\n📞 ${ph}\n📍 ${ad}\n\n📦 *Товары:*\n${cart.map(i=>`${i.name} x${i.qty}`).join('\n')}\n\n💰 *Итого: ${total}€*`;
+                
+                await fetch(`https://api.telegram.org/bot${TG.token}/sendMessage`, {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({chat_id:TG.chatId, text, parse_mode:'Markdown'})
+                });
+
+                document.getElementById('order-num').innerText = orderID;
+                window.showView('success');
+                cart = []; updateUI();
+            } catch (e) { alert("Ошибка! " + e.message); }
+            btn.disabled = false; btn.innerText = "Подтвердить оплату";
+        };
+
+        // --- ADMIN ---
         window.updateSettings = async () => {
             const val = document.getElementById('admin-card-input').value;
             await db.collection('settings').doc('general').set({ cardNum: val });
-            alert("Реквизиты обновлены!");
+            alert("Сохранено!");
         };
-
+        
         window.addCategory = async () => {
             const el = document.getElementById('new-cat-name');
-            if(el.value.trim()) {
-                await db.collection('categories').add({ name: el.value.trim(), createdAt: new Date() });
-                el.value = '';
-            }
+            if(el.value.trim()) { await db.collection('categories').add({ name: el.value.trim().toUpperCase(), createdAt: new Date() }); el.value = ''; }
         };
 
         window.updateCategory = async (id) => {
             const name = document.getElementById(`cat-input-${id}`).value;
-            try {
-                await db.collection('categories').doc(id).update({ name });
-                alert("Сохранено");
-            } catch(e) { alert("Ошибка! Проверьте интернет"); }
+            await db.collection('categories').doc(id).update({ name });
         };
-
-        window.delCategory = async (id) => {
-            if(confirm("Удалить классификацию?")) {
-                await db.collection('categories').doc(id).delete();
-            }
-        };
+        window.delCategory = async (id) => { if(confirm("Удалить категорию?")) await db.collection('categories').doc(id).delete(); };
 
         window.addProduct = async () => {
             const n = document.getElementById('prod-name').value, p = document.getElementById('prod-price').value,
@@ -235,46 +328,57 @@
             }
         };
 
-        window.updateStock = async (id, val) => {
-            await db.collection('products').doc(id).update({ stock: Number(val) });
-        };
+        window.updateStock = async (id, v) => { await db.collection('products').doc(id).update({ stock: Number(v) }); };
+        window.delProduct = async (id) => { if(confirm("Удалить товар?")) await db.collection('products').doc(id).delete(); };
 
-        window.delProduct = async (id) => {
-            if(confirm("Удалить товар?")) {
-                await db.collection('products').doc(id).delete();
-            }
-        };
-
-        window.tryLogin = () => {
-            if(document.getElementById('adm-pass').value === 'danil2409') {
-                window.closeAuth(); window.showView('admin');
-            } else alert("Доступ запрещен");
-        };
+        // --- AUTH ---
+        window.tryLogin = () => { if(document.getElementById('adm-pass').value === 'danil2409') { window.closeAuth(); window.showView('admin'); } };
         window.closeAuth = () => document.getElementById('auth-modal').classList.add('hidden');
+        document.getElementById('logo-trigger').onclick = () => { clicks++; if(clicks>=10){ document.getElementById('auth-modal').classList.remove('hidden'); clicks=0; } setTimeout(()=>clicks=0, 2000); };
 
-        document.getElementById('admin-trigger').onclick = () => {
-            clicks++; if(clicks >= 5) { document.getElementById('auth-modal').classList.remove('hidden'); clicks = 0; }
-            setTimeout(()=>clicks=0, 2000);
-        };
+        // --- RENDER ---
+        function renderShop() {
+            const grid = document.getElementById('shop-view');
+            if(!grid) return;
+            const filtered = (curCat === 'Все' ? products : products.filter(p => p.category === curCat)).filter(p => p.stock > 0);
+            
+            grid.innerHTML = filtered.map(p => {
+                const inCartItem = cart.find(c => c.id === p.id);
+                const qty = inCartItem ? inCartItem.qty : 0;
+                
+                // Динамическая кнопка
+                let btnHTML;
+                if(qty > 0) {
+                    btnHTML = `
+                    <div class="flex items-center bg-[#141414] rounded-xl w-full justify-between px-1 h-10 border border-white/10">
+                        <button onclick="window.updateCartQty('${p.id}', -1)" class="text-white w-8 h-full font-black text-lg">-</button>
+                        <span class="text-[#fbbf24] font-black text-sm">${qty}</span>
+                        <button onclick="window.updateCartQty('${p.id}', 1)" class="text-white w-8 h-full font-black text-lg" ${qty >= p.stock ? 'disabled style="opacity:0.3"' : ''}>+</button>
+                    </div>`;
+                } else {
+                    btnHTML = `<button onclick="window.addToCart('${p.id}')" class="w-10 h-10 fire-gradient text-black rounded-xl font-black text-xl btn-push shadow-lg shadow-orange-500/20">+</button>`;
+                }
 
-        window.sendOrder = async () => {
-            const b = document.getElementById('confirm-btn');
-            const n = document.getElementById('f-name').value, ph = document.getElementById('f-phone').value;
-            if(!n || !ph) return alert("Заполните данные!");
-            b.disabled = true; b.innerText = "ОБРАБОТКА...";
-            const orderID = Math.floor(Math.random()*9000)+1000;
-            const text = `🔥 ЗАКАЗ №${orderID}\n👤 ${n}\n📞 ${ph}\n📦 ${cart.map(i=>i.name).join(', ')}\n💰 ${cart.reduce((a,b)=>a+Number(b.price),0)}€`;
-            await fetch(`https://api.telegram.org/bot${TG.token}/sendMessage`, {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({chat_id:TG.chatId, text})
-            });
-            document.getElementById('order-num').innerText = orderID;
-            window.showView('success');
-            cart = []; updateCart();
-            b.disabled = false; b.innerText = "Подтвердить оплату";
-        };
+                return `
+                <div class="bg-[#1a1a1a] p-4 rounded-3xl border border-white/5 flex flex-col relative overflow-hidden">
+                    <span class="absolute top-3 right-3 text-[7px] font-black text-[#fbbf24] opacity-50 uppercase">${p.category}</span>
+                    <div class="aspect-square bg-black/40 rounded-2xl mb-3 flex items-center justify-center text-xl grayscale opacity-10 italic">FL</div>
+                    
+                    <h3 class="text-[12px] font-black uppercase h-8 line-clamp-2 leading-tight mb-1 text-white">${p.name}</h3>
+                    <p class="text-[9px] text-zinc-500 font-black mb-3 uppercase tracking-widest">Остаток: ${p.stock}</p>
+                    
+                    <div class="mt-auto flex justify-between items-center gap-2">
+                        <span class="text-lg font-black text-white whitespace-nowrap">${p.price}€</span>
+                        ${btnHTML}
+                    </div>
+                </div>`;
+            }).join('');
+            
+            if(filtered.length === 0) grid.innerHTML = `<div class="col-span-2 text-center py-20 text-zinc-600 font-bold uppercase text-xs">Нет товаров</div>`;
+        }
 
         function render() {
+            // Категории
             const bar = document.getElementById('category-bar');
             if(bar) {
                 let h = `<button onclick="window.setCat('Все')" class="px-5 py-2.5 rounded-xl bg-[#1a1a1a] text-[10px] font-black uppercase whitespace-nowrap border border-white/5 ${curCat==='Все'?'active-tab':''}">Все</button>`;
@@ -284,31 +388,16 @@
                 bar.innerHTML = h;
             }
 
-            const shop = document.getElementById('shop-view');
-            if(shop) {
-                const f = curCat === 'Все' ? products : products.filter(p => p.category === curCat);
-                shop.innerHTML = f.map(p => {
-                    const out = p.stock <= 0;
-                    return `
-                    <div class="bg-[#1a1a1a] p-4 rounded-3xl border border-white/5 flex flex-col relative">
-                        <span class="absolute top-3 right-3 text-[7px] font-black text-[#fbbf24] opacity-40 uppercase">${p.category}</span>
-                        <div class="aspect-square bg-black/40 rounded-2xl mb-3 flex items-center justify-center text-xl grayscale opacity-10">FL</div>
-                        <h3 class="text-[11px] font-black uppercase h-8 line-clamp-2 leading-tight mb-2">${p.name}</h3>
-                        <div class="mt-auto flex justify-between items-center">
-                            <span class="text-lg font-black">${p.price}€</span>
-                            <button onclick="window.buy('${p.id}')" ${out?'disabled':''} class="w-10 h-10 fire-gradient text-black rounded-xl font-black text-xl btn-active ${out?'opacity-10':''}">+</button>
-                        </div>
-                    </div>`;
-                }).join('');
-            }
+            renderShop();
 
+            // Админка
             const aCat = document.getElementById('admin-categories-list');
             if(aCat) {
                 aCat.innerHTML = categories.map(c => `
-                    <div class="flex gap-2 bg-black/40 p-3 rounded-xl border border-white/5 items-center">
-                        <input id="cat-input-${c.id}" value="${c.name}" class="flex-grow bg-transparent text-sm font-bold uppercase outline-none">
-                        <button onclick="window.updateCategory('${c.id}')" class="text-[#4ade80] font-black text-[9px] uppercase px-2">SAVE</button>
-                        <button onclick="window.delCategory('${c.id}')" class="text-red-500 font-black text-[9px] uppercase px-2">DEL</button>
+                    <div class="flex gap-2 bg-black/40 p-2 rounded-xl border border-white/5 items-center">
+                        <input id="cat-input-${c.id}" value="${c.name}" class="flex-grow bg-transparent text-sm font-bold uppercase outline-none text-white px-2">
+                        <button onclick="window.updateCategory('${c.id}')" class="text-[#4ade80] font-black text-[9px] px-2 py-2 bg-green-500/10 rounded-lg">OK</button>
+                        <button onclick="window.delCategory('${c.id}')" class="text-red-500 font-black text-[9px] px-2 py-2 bg-red-500/10 rounded-lg">DEL</button>
                     </div>
                 `).join('');
             }
@@ -319,24 +408,23 @@
                     <div class="bg-black/40 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
                         <div class="w-1/2">
                             <p class="text-[8px] text-[#fbbf24] font-black uppercase">${p.category}</p>
-                            <p class="text-[11px] font-bold uppercase truncate">${p.name}</p>
+                            <p class="text-[11px] font-bold uppercase truncate text-white">${p.name}</p>
                         </div>
-                        <div class="flex items-center gap-4">
-                            <input type="number" value="${p.stock}" onchange="window.updateStock('${p.id}', this.value)" class="w-12 bg-black/50 text-center rounded-lg text-xs py-2 font-bold outline-none border border-white/5">
-                            <button onclick="window.delProduct('${p.id}')" class="text-red-500 font-black px-2">✕</button>
+                        <div class="flex items-center gap-3">
+                            <input type="number" value="${p.stock}" onchange="window.updateStock('${p.id}', this.value)" class="w-10 bg-black/50 text-center rounded-lg text-xs py-2 font-bold outline-none border border-white/5 text-white">
+                            <button onclick="window.delProduct('${p.id}')" class="text-red-500 font-black px-3 py-2 bg-red-500/10 rounded-lg text-[10px]">DEL</button>
                         </div>
                     </div>
                 `).join('');
             }
-
+            
             const sel = document.getElementById('prod-cat');
             if(sel) sel.innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
             
-            if(document.getElementById('admin-card-input')) {
-                document.getElementById('admin-card-input').value = settings.cardNum || '';
-            }
+            if(document.getElementById('admin-card-input')) document.getElementById('admin-card-input').value = settings.cardNum || '';
         }
 
+        // LISTENERS
         db.collection('settings').doc('general').onSnapshot(d => { if(d.exists) settings = d.data(); render(); });
         db.collection('categories').orderBy('createdAt','asc').onSnapshot(s => { categories = s.docs.map(d=>({id:d.id,...d.data()})); render(); });
         db.collection('products').orderBy('createdAt','desc').onSnapshot(s => { products = s.docs.map(d=>({id:d.id,...d.data()})); render(); });
@@ -344,4 +432,5 @@
     </script>
 </body>
 </html>
+
 
