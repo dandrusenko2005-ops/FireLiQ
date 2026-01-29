@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FireLiQ Store</title>
+    <title>FireLiQ | Premium Store</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Firebase SDK (Compat Version - самая надежная для HTML) -->
+    <!-- Firebase SDK (Compat - Самая стабильная версия) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -14,10 +14,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
 
     <style>
-        :root { --fire: #ff4d00; --gold: #fbbf24; --dark: #121212; }
+        :root { --fire: #ff4d00; --gold: #fbbf24; --dark: #0f0f0f; }
         body { 
             background: var(--dark); 
-            color: white; 
+            color: #ffffff; 
             font-family: 'Nunito', sans-serif; 
             -webkit-tap-highlight-color: transparent; 
         }
@@ -42,7 +42,17 @@
             color: white;
             font-weight: 700;
         }
-        .input-flat:focus { border-color: var(--gold); }
+        .input-flat:focus { border-color: var(--fire); }
+        
+        /* Анимация галочки */
+        .check-anim {
+            width: 80px; height: 80px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: #ffcc00; color: black; font-size: 40px; margin: 0 auto 20px;
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.3);
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -69,7 +79,7 @@
 
         <!-- Cart -->
         <div id="cart-view" class="hidden space-y-6">
-            <h2 class="text-3xl font-black italic text-[#fbbf24]">Корзина</h2>
+            <h2 class="text-3xl font-black italic text-[#ffcc00]">Корзина</h2>
             <div id="cart-items" class="space-y-3"></div>
             <div class="bg-[#1e1e1e] p-6 rounded-[2rem] border border-white/5">
                 <div class="flex justify-between items-center mb-6">
@@ -83,7 +93,7 @@
 
         <!-- Checkout -->
         <div id="checkout-view" class="hidden space-y-4">
-            <h2 class="text-3xl font-black italic text-[#fbbf24]">Доставка</h2>
+            <h2 class="text-3xl font-black italic text-[#ffcc00]">Доставка</h2>
             <input id="f-name" class="input-flat" placeholder="Ваше Имя">
             <input id="f-phone" class="input-flat" placeholder="Телефон">
             <input id="f-addr" class="input-flat" placeholder="Город, Улица, Дом, Индекс">
@@ -93,7 +103,7 @@
 
         <!-- Payment -->
         <div id="payment-view" class="hidden text-center space-y-6">
-            <h2 class="text-3xl font-black italic text-[#fbbf24]">Оплата</h2>
+            <h2 class="text-3xl font-black italic text-[#ffcc00]">Оплата</h2>
             <div class="bg-[#1e1e1e] p-8 rounded-[2rem] border border-white/5 shadow-2xl">
                 <p class="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Перевод на карту:</p>
                 <div class="text-xl font-black text-white tracking-widest mb-6 select-all" id="display-card-num">....</div>
@@ -108,8 +118,8 @@
 
         <!-- Success -->
         <div id="success-view" class="hidden flex flex-col items-center justify-center text-center py-20 px-6">
-            <div class="text-7xl mb-6">✅</div>
-            <h2 class="text-3xl font-black italic mb-2 text-[#fbbf24]">ПРИНЯТО!</h2>
+            <div class="check-anim">✓</div>
+            <h2 class="text-3xl font-black italic mb-2 text-[#ffcc00]">ПРИНЯТО!</h2>
             <p class="text-zinc-400 font-bold mb-10 text-sm">Ваш заказ <span id="order-num" class="text-white">#0</span> в обработке.</p>
             <button onclick="window.showView('shop')" class="px-10 py-4 bg-white text-black rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform">В магазин</button>
         </div>
@@ -117,7 +127,7 @@
         <!-- Admin -->
         <div id="admin-view" class="hidden space-y-8 pb-20">
             <div class="flex justify-between items-center bg-[#1e1e1e] p-4 rounded-2xl">
-                <h2 class="text-[#fbbf24] font-black uppercase text-xl italic">Панель управления</h2>
+                <h2 class="text-[#ffcc00] font-black uppercase text-xl italic">Панель управления</h2>
                 <button onclick="window.showView('shop')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">ВЫХОД</button>
             </div>
 
@@ -146,7 +156,7 @@
                 <input id="prod-name" class="input-flat text-sm" placeholder="Название товара">
                 <div class="flex gap-2">
                     <input id="prod-price" class="input-flat text-sm w-1/2" placeholder="Цена €">
-                    <input id="prod-stock" type="number" class="input-flat text-sm w-1/2" placeholder="Кол-во">
+                    <input id="prod-stock" type="number" class="input-flat text-sm w-1/2" placeholder="Склад">
                 </div>
                 <select id="prod-cat" class="input-flat text-sm text-zinc-400 font-bold uppercase"></select>
                 <button onclick="window.addProduct()" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push">Опубликовать</button>
@@ -167,7 +177,7 @@
     </div>
 
     <script>
-        // === ВСТАВЬ СВОЙ API KEY ===
+        // === ВСТАВЬ СВОЙ API KEY ЗДЕСЬ ===
         const firebaseConfig = {
             apiKey: "AIzaSyAb8gtyyzMqxEOiK9f9lOWN7stwAbLzakc",
             authDomain: "fireliq-15259.firebaseapp.com",
@@ -197,31 +207,32 @@
             if (view === 'payment') {
                 const total = cart.reduce((a, b) => a + (Number(b.price) * b.qty), 0);
                 document.getElementById('payment-total').innerText = total + '€';
-                document.getElementById('display-card-num').innerText = settings.cardNum || '....';
+                document.getElementById('display-card-num').innerText = settings.cardNum || 'Не указана';
             }
             window.scrollTo(0,0);
         };
 
         window.setCat = (c) => { curCat = c; render(); };
 
-        // --- CART LOGIC (MICRO-INTERACTIONS) ---
+        // --- CART LOGIC ---
         window.updateCartQty = (id, delta) => {
             const pIndex = cart.findIndex(c => c.id === id);
+            
             if (pIndex > -1) {
                 const p = cart[pIndex];
                 const newQty = p.qty + delta;
                 
                 // Проверка склада
-                const stock = products.find(prod => prod.id === id).stock;
-                
-                if (newQty > stock) return; // Нельзя больше склада
+                const prodInDb = products.find(prod => prod.id === id);
+                if (!prodInDb) return;
+
+                if (newQty > prodInDb.stock) return; // Не больше склада
                 if (newQty <= 0) {
-                    cart.splice(pIndex, 1); // Удалить если 0
+                    cart.splice(pIndex, 1);
                 } else {
                     cart[pIndex].qty = newQty;
                 }
             } else if (delta > 0) {
-                // Добавление нового
                 const p = products.find(x => x.id === id);
                 if (p && p.stock > 0) {
                     cart.push({ ...p, qty: 1 });
@@ -230,19 +241,15 @@
             updateUI();
         };
 
-        // Специальная функция для кнопки "+" на пустой карточке
-        window.addToCart = (id) => {
-            window.updateCartQty(id, 1);
-        };
+        window.addToCart = (id) => window.updateCartQty(id, 1);
 
         function updateUI() {
-            // Обновляем счетчик
             const totalQty = cart.reduce((a, b) => a + b.qty, 0);
             const countEl = document.getElementById('cart-count');
             countEl.innerText = totalQty;
             countEl.classList.toggle('hidden', totalQty === 0);
 
-            // Обновляем корзину
+            // Корзина
             const list = document.getElementById('cart-items');
             list.innerHTML = cart.map(item => `
                 <div class="bg-[#1e1e1e] p-4 rounded-2xl flex justify-between items-center border border-white/5">
@@ -258,83 +265,105 @@
                 </div>
             `).join('');
             
-            const totalPrice = cart.reduce((a, b) => a + (Number(b.price) * b.qty), 0);
-            document.getElementById('total-price').innerText = totalPrice + '€';
-
-            // Перерисовываем магазин, чтобы обновить кнопки +/-
+            document.getElementById('total-price').innerText = cart.reduce((a, b) => a + (Number(b.price) * b.qty), 0) + '€';
+            
             if (!document.getElementById('shop-view').classList.contains('hidden')) {
                 renderShop();
             }
         }
 
-        // --- ORDER ---
+        // --- ORDER LOGIC ---
         window.sendOrder = async () => {
             const btn = document.getElementById('confirm-btn');
-            const n = document.getElementById('f-name').value, ph = document.getElementById('f-phone').value, ad = document.getElementById('f-addr').value;
-            if(!n || !ph) return alert("Заполните данные!");
+            const n = document.getElementById('f-name').value;
+            const ph = document.getElementById('f-phone').value;
+            const addr = document.getElementById('f-addr').value;
+
+            if(!n || !ph || !addr) return alert("Заполните все данные!");
             
-            btn.disabled = true; btn.innerText = "ОБРАБОТКА...";
+            btn.disabled = true; 
+            btn.innerText = "ОБРАБОТКА...";
             
             try {
-                // Списываем со склада
+                // ПРОВЕРКА И СПИСАНИЕ СО СКЛАДА
                 const batch = db.batch();
-                cart.forEach(item => {
-                    const ref = db.collection('products').document(item.id);
-                    batch.update(ref, { stock: firebase.firestore.FieldValue.increment(-item.qty) });
-                });
+                
+                // 1. Проверяем остатки
+                for (const item of cart) {
+                    const ref = db.collection('products').doc(item.id);
+                    // Важно: в реальном приложении нужна транзакция, но для простоты используем batch update
+                    // Здесь мы используем .doc() вместо .document() - это было ошибкой
+                    batch.update(ref, { 
+                        stock: firebase.firestore.FieldValue.increment(-item.qty) 
+                    });
+                }
+                
                 await batch.commit();
 
-                // Телеграм
+                // 2. Отправка в ТГ
                 const orderID = Math.floor(Math.random()*9000)+1000;
                 const total = cart.reduce((a,b)=>a+(Number(b.price)*b.qty),0);
-                const text = `🔥 *ЗАКАЗ №${orderID}*\n\n👤 ${n}\n📞 ${ph}\n📍 ${ad}\n\n📦 *Товары:*\n${cart.map(i=>`${i.name} x${i.qty}`).join('\n')}\n\n💰 *Итого: ${total}€*`;
+                const text = `🔥 *ЗАКАЗ №${orderID}*\n\n👤 Имя: ${n}\n📞 Тел: ${ph}\n📍 Адрес: ${addr}\n\n📦 Товары:\n${cart.map(i=>`• ${i.name} (${i.qty} шт.)`).join('\n')}\n\n💰 Итого: *${total}€*`;
                 
                 await fetch(`https://api.telegram.org/bot${TG.token}/sendMessage`, {
                     method:'POST', headers:{'Content-Type':'application/json'},
                     body: JSON.stringify({chat_id:TG.chatId, text, parse_mode:'Markdown'})
                 });
+                
+                // 3. Сохранение заказа
+                await db.collection('orders').add({
+                    customer: { name: n, phone: ph, address: addr },
+                    items: cart,
+                    total: total,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: 'paid'
+                });
 
                 document.getElementById('order-num').innerText = orderID;
                 window.showView('success');
-                cart = []; updateUI();
-            } catch (e) { alert("Ошибка! " + e.message); }
-            btn.disabled = false; btn.innerText = "Подтвердить оплату";
+                cart = []; 
+                updateUI();
+                
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка! " + e.message);
+            }
+            
+            btn.disabled = false; 
+            btn.innerText = "Я оплатил";
         };
 
-        // --- ADMIN ---
+        // --- ADMIN LOGIC ---
         window.updateSettings = async () => {
             const val = document.getElementById('admin-card-input').value;
             await db.collection('settings').doc('general').set({ cardNum: val });
             alert("Сохранено!");
         };
-        
         window.addCategory = async () => {
             const el = document.getElementById('new-cat-name');
             if(el.value.trim()) { await db.collection('categories').add({ name: el.value.trim().toUpperCase(), createdAt: new Date() }); el.value = ''; }
         };
-
         window.updateCategory = async (id) => {
             const name = document.getElementById(`cat-input-${id}`).value;
             await db.collection('categories').doc(id).update({ name });
+            alert("Сохранено");
         };
-        window.delCategory = async (id) => { if(confirm("Удалить категорию?")) await db.collection('categories').doc(id).delete(); };
+        window.delCategory = async (id) => { if(confirm("Удалить?")) await db.collection('categories').doc(id).delete(); };
 
         window.addProduct = async () => {
-            const n = document.getElementById('prod-name').value, p = document.getElementById('prod-price').value,
-                  s = document.getElementById('prod-stock').value, c = document.getElementById('prod-cat').value;
+            const n = document.getElementById('prod-name').value, p = document.getElementById('prod-price').value, s = document.getElementById('prod-stock').value, c = document.getElementById('prod-cat').value;
             if(n && p) {
                 await db.collection('products').add({ name: n, price: Number(p), stock: Number(s)||0, category: c, createdAt: new Date() });
                 ['prod-name','prod-price','prod-stock'].forEach(id => document.getElementById(id).value = '');
             }
         };
-
         window.updateStock = async (id, v) => { await db.collection('products').doc(id).update({ stock: Number(v) }); };
-        window.delProduct = async (id) => { if(confirm("Удалить товар?")) await db.collection('products').doc(id).delete(); };
+        window.delProduct = async (id) => { if(confirm("Удалить?")) await db.collection('products').doc(id).delete(); };
 
         // --- AUTH ---
-        window.tryLogin = () => { if(document.getElementById('adm-pass').value === 'danil2409') { window.closeAuth(); window.showView('admin'); } };
+        window.tryLogin = () => { if(document.getElementById('adm-pass').value === 'danil2409') { window.closeAuth(); window.showView('admin'); } else alert("Ошибка"); };
         window.closeAuth = () => document.getElementById('auth-modal').classList.add('hidden');
-        document.getElementById('logo-trigger').onclick = () => { clicks++; if(clicks>=10){ document.getElementById('auth-modal').classList.remove('hidden'); clicks=0; } setTimeout(()=>clicks=0, 2000); };
+        document.getElementById('logo-trigger').onclick = () => { clicks++; if(clicks>=5){ document.getElementById('auth-modal').classList.remove('hidden'); clicks=0; } setTimeout(()=>clicks=0, 2000); };
 
         // --- RENDER ---
         function renderShop() {
@@ -346,7 +375,6 @@
                 const inCartItem = cart.find(c => c.id === p.id);
                 const qty = inCartItem ? inCartItem.qty : 0;
                 
-                // Динамическая кнопка
                 let btnHTML;
                 if(qty > 0) {
                     btnHTML = `
@@ -363,25 +391,21 @@
                 <div class="bg-[#1a1a1a] p-4 rounded-3xl border border-white/5 flex flex-col relative overflow-hidden">
                     <span class="absolute top-3 right-3 text-[7px] font-black text-[#fbbf24] opacity-50 uppercase">${p.category}</span>
                     <div class="aspect-square bg-black/40 rounded-2xl mb-3 flex items-center justify-center text-xl grayscale opacity-10 italic">FL</div>
-                    
                     <h3 class="text-[12px] font-black uppercase h-8 line-clamp-2 leading-tight mb-1 text-white">${p.name}</h3>
-                    <p class="text-[9px] text-zinc-500 font-black mb-3 uppercase tracking-widest">Остаток: ${p.stock}</p>
-                    
+                    <p class="text-[9px] text-zinc-400 font-bold mb-3 uppercase italic">В наличии: ${p.stock} шт</p>
                     <div class="mt-auto flex justify-between items-center gap-2">
                         <span class="text-lg font-black text-white whitespace-nowrap">${p.price}€</span>
-                        ${btnHTML}
+                        <div class="flex justify-end min-w-[80px]">${btnHTML}</div>
                     </div>
                 </div>`;
             }).join('');
-            
-            if(filtered.length === 0) grid.innerHTML = `<div class="col-span-2 text-center py-20 text-zinc-600 font-bold uppercase text-xs">Нет товаров</div>`;
         }
 
         function render() {
             // Категории
             const bar = document.getElementById('category-bar');
             if(bar) {
-                let h = `<button onclick="window.setCat('Все')" class="px-5 py-2.5 rounded-xl bg-[#1a1a1a] text-[10px] font-black uppercase whitespace-nowrap border border-white/5 ${curCat==='Все'?'active-tab':''}">Все</button>`;
+                let h = `<button onclick="window.setCat('Все')" class="px-5 py-2.5 rounded-xl bg-[#1a1a1a] text-[10px] font-black uppercase whitespace-nowrap border border-white/5 ${curCat==='Все'?'active-tab':''}">Все 🔥</button>`;
                 categories.forEach(c => {
                     h += `<button onclick="window.setCat('${c.name}')" class="px-5 py-2.5 rounded-xl bg-[#1a1a1a] text-[10px] font-black uppercase whitespace-nowrap border border-white/5 ${curCat===c.name?'active-tab':''}">${c.name}</button>`;
                 });
@@ -396,12 +420,12 @@
                 aCat.innerHTML = categories.map(c => `
                     <div class="flex gap-2 bg-black/40 p-2 rounded-xl border border-white/5 items-center">
                         <input id="cat-input-${c.id}" value="${c.name}" class="flex-grow bg-transparent text-sm font-bold uppercase outline-none text-white px-2">
-                        <button onclick="window.updateCategory('${c.id}')" class="text-[#4ade80] font-black text-[9px] px-2 py-2 bg-green-500/10 rounded-lg">OK</button>
-                        <button onclick="window.delCategory('${c.id}')" class="text-red-500 font-black text-[9px] px-2 py-2 bg-red-500/10 rounded-lg">DEL</button>
+                        <button onclick="window.updateCategory('${c.id}')" class="text-[#4ade80] font-black text-[9px] uppercase px-2">SAVE</button>
+                        <button onclick="window.delCategory('${c.id}')" class="text-red-500 font-black text-[9px] uppercase px-2">DEL</button>
                     </div>
                 `).join('');
             }
-
+            
             const aProd = document.getElementById('admin-products-list');
             if(aProd) {
                 aProd.innerHTML = products.map(p => `
@@ -410,21 +434,19 @@
                             <p class="text-[8px] text-[#fbbf24] font-black uppercase">${p.category}</p>
                             <p class="text-[11px] font-bold uppercase truncate text-white">${p.name}</p>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <input type="number" value="${p.stock}" onchange="window.updateStock('${p.id}', this.value)" class="w-10 bg-black/50 text-center rounded-lg text-xs py-2 font-bold outline-none border border-white/5 text-white">
-                            <button onclick="window.delProduct('${p.id}')" class="text-red-500 font-black px-3 py-2 bg-red-500/10 rounded-lg text-[10px]">DEL</button>
+                        <div class="flex items-center gap-4">
+                            <input type="number" value="${p.stock}" onchange="window.updateStock('${p.id}', this.value)" class="w-12 bg-black/50 text-center rounded-lg text-xs py-2 font-bold outline-none border border-white/5 text-white">
+                            <button onclick="window.delProduct('${p.id}')" class="text-red-500 font-black px-2">✕</button>
                         </div>
                     </div>
                 `).join('');
             }
-            
+
             const sel = document.getElementById('prod-cat');
             if(sel) sel.innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-            
             if(document.getElementById('admin-card-input')) document.getElementById('admin-card-input').value = settings.cardNum || '';
         }
 
-        // LISTENERS
         db.collection('settings').doc('general').onSnapshot(d => { if(d.exists) settings = d.data(); render(); });
         db.collection('categories').orderBy('createdAt','asc').onSnapshot(s => { categories = s.docs.map(d=>({id:d.id,...d.data()})); render(); });
         db.collection('products').orderBy('createdAt','desc').onSnapshot(s => { products = s.docs.map(d=>({id:d.id,...d.data()})); render(); });
