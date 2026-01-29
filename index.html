@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FireLiQ | Premium Store</title>
+    <title>FireLiQ | Premium Store DE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Firebase SDK -->
@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
 
     <style>
-        :root { --fire: #ff4d00; --gold: #fbbf24; --dark: #0f0f0f; }
+        :root { --fire: #ff4d00; --gold: #fbbf24; --dark: #0f0f0f; --error: #ef4444; }
         body { 
             background: var(--dark); 
             color: #ffffff; 
@@ -41,34 +41,30 @@
             width: 100%;
             color: white;
             font-weight: 700;
+            transition: border-color 0.2s;
         }
         .input-flat:focus { border-color: var(--fire); }
-
-        /* Стиль для выбора цвета */
-        .color-picker {
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-            cursor: pointer;
-            background: none;
-        }
-        .color-wrapper {
-            width: 100%;
-            height: 52px;
-            overflow: hidden;
-            border-radius: 12px;
-            border: 2px solid rgba(255,255,255,0.05);
-        }
+        .input-error { border-color: var(--error) !important; }
         
-        .check-anim {
-            width: 80px; height: 80px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            background: #ffcc00; color: black; font-size: 40px; margin: 0 auto 20px;
-            box-shadow: 0 0 30px rgba(255, 204, 0, 0.3);
-            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .instruction-step {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
         }
-        @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+        .step-num {
+            background: var(--gold);
+            color: black;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            flex-shrink: 0;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -76,7 +72,7 @@
     <nav class="sticky top-0 z-50 glass p-4 flex justify-between items-center">
         <div id="logo-trigger" class="flex items-center gap-2 cursor-pointer select-none">
             <span class="text-2xl">🔥</span>
-            <h1 class="text-2xl font-black italic tracking-tighter">
+            <h1 class="text-2xl font-black italic tracking-tighter uppercase">
                 FIRE<span class="text-[#fbbf24]">LIQ</span>
             </h1>
         </div>
@@ -94,41 +90,90 @@
         <div id="cart-view" class="hidden space-y-6">
             <div class="flex justify-between items-center">
                 <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Корзина</h2>
-                <button onclick="window.showView('shop')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg uppercase">Назад</button>
+                <button onclick="window.showView('shop')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">НАЗАД</button>
             </div>
             <div id="cart-items" class="space-y-3"></div>
             <div class="bg-[#1e1e1e] p-6 rounded-[2rem] border border-white/5">
                 <div class="flex justify-between items-center mb-6">
-                    <span class="text-zinc-500 font-bold uppercase text-[10px]">Итого</span>
+                    <span class="text-zinc-500 font-bold uppercase text-[10px]">Итого:</span>
                     <span id="total-price" class="text-2xl font-black text-white">0€</span>
                 </div>
                 <button onclick="window.showView('checkout')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push text-lg">Оформить</button>
             </div>
         </div>
 
-        <!-- Доставка -->
+        <!-- Доставка + Валидация -->
         <div id="checkout-view" class="hidden space-y-4">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Доставка</h2>
-                <button onclick="window.showView('cart')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg uppercase">Назад</button>
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-2xl font-black italic text-[#ffcc00] uppercase">Данные</h2>
+                <button onclick="window.showView('cart')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">НАЗАД</button>
             </div>
-            <input id="f-name" class="input-flat" placeholder="Ваше Имя">
-            <input id="f-phone" class="input-flat" placeholder="Телефон">
-            <input id="f-addr" class="input-flat" placeholder="Адрес доставки">
-            <button onclick="window.showView('payment')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push mt-2">К оплате</button>
+            
+            <div class="space-y-3">
+                <div>
+                    <input id="f-name" class="input-flat" placeholder="Name Surname (Latin only)">
+                    <p id="err-name" class="text-[9px] text-red-500 mt-1 hidden font-bold">Используйте только латиницу (A-Z)</p>
+                </div>
+
+                <div>
+                    <input id="f-tg" class="input-flat" placeholder="Telegram Username (@username)">
+                    <p id="err-tg" class="text-[9px] text-red-500 mt-1 hidden font-bold">Введите корректный @username</p>
+                </div>
+
+                <div class="pt-2">
+                    <p class="text-[10px] text-zinc-500 font-black uppercase mb-2 ml-1">Адрес в Германии (Latin)</p>
+                    <div class="space-y-3">
+                        <input id="f-street" class="input-flat" placeholder="Street and House Number">
+                        <div class="flex gap-2">
+                            <input id="f-zip" class="input-flat w-1/3" placeholder="ZIP (PLZ)" type="number">
+                            <input id="f-city" class="input-flat w-2/3" placeholder="City">
+                        </div>
+                    </div>
+                    <p id="err-addr" class="text-[9px] text-red-500 mt-1 hidden font-bold">Проверьте индекс (5 цифр) и латиницу в адресе</p>
+                </div>
+            </div>
+
+            <button onclick="window.validateAndNext()" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push mt-4">Далее</button>
+        </div>
+
+        <!-- Инструкция по оплате -->
+        <div id="instruction-view" class="hidden space-y-6">
+            <h2 class="text-3xl font-black italic text-[#ffcc00] uppercase">Как оплатить?</h2>
+            
+            <div class="bg-[#1e1e1e] p-6 rounded-[2rem] border border-white/5 space-y-6">
+                <div class="instruction-step">
+                    <div class="step-num">1</div>
+                    <p class="text-sm font-bold text-zinc-300">Скопируйте номер карты на следующем экране.</p>
+                </div>
+                <div class="instruction-step">
+                    <div class="step-num">2</div>
+                    <p class="text-sm font-bold text-zinc-300">Перейдите в ваше банковское приложение и сделайте перевод.</p>
+                </div>
+                <div class="instruction-step">
+                    <div class="step-num">3</div>
+                    <p class="text-sm font-bold text-zinc-300">Убедитесь, что сумма перевода в точности совпадает с итоговой.</p>
+                </div>
+                <div class="instruction-step">
+                    <div class="step-num">4</div>
+                    <p class="text-sm font-bold text-zinc-300">После оплаты вернитесь сюда и нажмите кнопку <span class="text-white">«Я оплатил»</span>.</p>
+                </div>
+            </div>
+
+            <button onclick="window.showView('payment')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push">Понятно, к оплате</button>
+            <button onclick="window.showView('checkout')" class="w-full text-zinc-500 font-bold text-[10px] uppercase">Назад к данным</button>
         </div>
 
         <!-- Оплата -->
         <div id="payment-view" class="hidden text-center space-y-6">
             <div class="flex justify-between items-center text-left">
                 <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Оплата</h2>
-                <button onclick="window.showView('checkout')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg uppercase">Назад</button>
+                <button onclick="window.showView('instruction')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg uppercase">ИНСТРУКЦИЯ</button>
             </div>
             <div class="bg-[#1e1e1e] p-8 rounded-[2rem] border border-white/5 shadow-2xl">
-                <p class="text-[10px] text-zinc-500 uppercase font-black mb-4">Перевод на карту:</p>
+                <p class="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Реквизиты для перевода:</p>
                 <div class="text-xl font-black text-white tracking-widest mb-6 select-all" id="display-card-num">....</div>
                 <div class="flex justify-between border-t border-white/5 pt-4">
-                    <span class="text-zinc-500 font-bold uppercase text-xs">Сумма:</span>
+                    <span class="text-zinc-500 font-bold uppercase text-xs">К переводу:</span>
                     <span id="payment-total" class="font-black text-white text-xl">0€</span>
                 </div>
             </div>
@@ -137,54 +182,36 @@
 
         <!-- Успех -->
         <div id="success-view" class="hidden flex flex-col items-center justify-center text-center py-20 px-6">
-            <div class="check-anim">✅</div>
-            <h2 class="text-3xl font-black italic mb-2 text-[#ffcc00]">ПРИНЯТО!</h2>
-            <p class="text-zinc-400 font-bold mb-10 text-sm">Ваш заказ <span id="order-num" class="text-white">#0</span> в обработке.</p>
+            <div class="w-20 h-20 bg-[#ffcc00] rounded-full flex items-center justify-center text-black text-4xl mb-6 shadow-[0_0_30px_rgba(255,204,0,0.4)]">✓</div>
+            <h2 class="text-3xl font-black italic mb-2 text-[#ffcc00]">ЗАКАЗ ПРИНЯТ</h2>
+            <p class="text-zinc-400 font-bold mb-10 text-sm">Ваш заказ <span id="order-num" class="text-white">#0</span> успешно отправлен администратору.</p>
             <button onclick="window.showView('shop')" class="px-10 py-4 bg-white text-black rounded-xl font-black uppercase text-xs tracking-widest shadow-lg">В магазин</button>
         </div>
 
         <!-- Админка -->
         <div id="admin-view" class="hidden space-y-8 pb-20">
             <div class="flex justify-between items-center bg-[#1e1e1e] p-4 rounded-2xl">
-                <h2 class="text-[#ffcc00] font-black uppercase text-xl italic">Панель управления</h2>
+                <h2 class="text-[#ffcc00] font-black uppercase text-xl italic">Админка</h2>
                 <button onclick="window.showView('shop')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">ВЫХОД</button>
             </div>
 
-            <!-- Реквизиты -->
-            <div class="bg-[#1a1a1a] p-5 rounded-2xl space-y-3">
-                <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Реквизиты карты</p>
-                <div class="flex gap-2">
-                    <input id="admin-card-input" class="input-flat text-sm text-center" placeholder="Номер карты">
-                    <button onclick="window.updateSettings()" class="bg-white text-black px-5 rounded-xl font-black text-[10px] uppercase">ОК</button>
-                </div>
-            </div>
-
-            <!-- Категории -->
-            <div class="bg-[#1a1a1a] p-5 rounded-2xl space-y-4">
-                <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Классификации</p>
-                <div class="flex gap-2">
-                    <input id="new-cat-name" class="input-flat text-sm" placeholder="Название (напр. Ягоды)">
-                    <button onclick="window.addCategory()" class="bg-[#fbbf24] text-black px-5 rounded-xl font-black text-xl">+</button>
-                </div>
-                <div id="admin-categories-list" class="space-y-2"></div>
-            </div>
-
-            <!-- Товары -->
-            <div class="bg-[#1a1a1a] p-5 rounded-2xl space-y-4">
-                <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Новый товар</p>
-                <div class="flex gap-2">
-                    <input id="prod-emoji" class="input-flat text-sm w-1/4 text-center" placeholder="🍒🍒">
-                    <div class="w-1/4 color-wrapper">
-                        <input id="prod-bg" type="color" class="color-picker" value="#1a1a1a">
+            <div class="bg-[#1e1e1e] p-5 rounded-2xl space-y-4">
+                <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Новый товар</p>
+                <label class="block w-full h-32 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer bg-black/20 overflow-hidden relative">
+                    <input type="file" id="prod-image-input" accept="image/*" class="hidden" onchange="window.handleImageSelect(event)">
+                    <img id="preview-img" class="absolute inset-0 w-full h-full object-cover hidden">
+                    <div id="placeholder-ui" class="text-center">
+                        <span class="text-3xl">📸</span>
+                        <p class="text-[10px] font-black text-zinc-500 uppercase mt-2">Фото товара</p>
                     </div>
-                    <input id="prod-name" class="input-flat text-sm w-2/4" placeholder="Название">
-                </div>
+                </label>
+                <input id="prod-name" class="input-flat text-sm" placeholder="Название">
                 <div class="flex gap-2">
                     <input id="prod-price" class="input-flat text-sm w-1/2" placeholder="Цена €">
                     <input id="prod-stock" type="number" class="input-flat text-sm w-1/2" placeholder="Кол-во">
                 </div>
                 <select id="prod-cat" class="input-flat text-sm text-zinc-400 font-bold uppercase"></select>
-                <button onclick="window.addProduct()" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push">Опубликовать</button>
+                <button onclick="window.addProduct()" id="add-prod-btn" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push">Опубликовать</button>
             </div>
 
             <div id="admin-products-list" class="space-y-3"></div>
@@ -197,31 +224,95 @@
             <span class="text-4xl">🔐</span>
             <input id="adm-pass" type="password" class="w-full bg-black/50 p-4 rounded-xl text-center font-black outline-none tracking-[5px] text-xl border border-white/5 text-white" placeholder="••••">
             <button onclick="window.tryLogin()" class="w-full py-4 fire-gradient text-black rounded-xl font-black uppercase text-lg btn-push">Войти</button>
-            <button onclick="window.closeAuth()" class="text-zinc-500 font-bold text-[10px] uppercase tracking-widest">Закрыть</button>
+            <button onclick="window.closeAuth()" class="text-zinc-500 font-bold text-[10px] uppercase">Закрыть</button>
         </div>
     </div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyAb8gtyyzMqxEOiK9f9lOWN7stwAbLzakc",
-            authDomain: "fireliq-15259.firebaseapp.com",
-            projectId: "fireliq-15259",
-            storageBucket: "fireliq-15259.firebasestorage.app",
-            messagingSenderId: "752537372890",
-            appId: "1:752537372890:web:1afa9447329ea31ec57de3"
-        };
+        const firebaseConfig = JSON.parse(__firebase_config);
         const TG = { token: "8443611271:AAHQiXYvsOGI5FuoEB-Q0QTgdKleskhS1QQ", chatId: "8480602033" };
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
-        auth.signInAnonymously().catch(console.error);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await auth.signInWithCustomToken(__initial_auth_token);
+            } else {
+                await auth.signInAnonymously();
+            }
+        };
+        initAuth().catch(console.error);
 
         let products = [], categories = [], cart = [], settings = {cardNum: ''}, curCat = 'Все', clicks = 0;
+        let selectedImageBase64 = "";
+
+        // Регулярные выражения для валидации
+        const regexLatin = /^[a-zA-Z0-9\s\.,\-]+$/;
+        const regexTg = /^@[a-zA-Z0-9_]{4,}$/;
+        const regexZip = /^[0-9]{5}$/;
+
+        window.validateAndNext = () => {
+            let isValid = true;
+            const name = document.getElementById('f-name');
+            const tg = document.getElementById('f-tg');
+            const street = document.getElementById('f-street');
+            const zip = document.getElementById('f-zip');
+            const city = document.getElementById('f-city');
+
+            // Сброс ошибок
+            [name, tg, street, zip, city].forEach(el => el.classList.remove('input-error'));
+            ['err-name', 'err-tg', 'err-addr'].forEach(id => document.getElementById(id).classList.add('hidden'));
+
+            if (!regexLatin.test(name.value.trim())) {
+                name.classList.add('input-error');
+                document.getElementById('err-name').classList.remove('hidden');
+                isValid = false;
+            }
+            if (!regexTg.test(tg.value.trim())) {
+                tg.classList.add('input-error');
+                document.getElementById('err-tg').classList.remove('hidden');
+                isValid = false;
+            }
+            if (!regexLatin.test(street.value.trim()) || !regexZip.test(zip.value.trim()) || !regexLatin.test(city.value.trim())) {
+                [street, zip, city].forEach(el => { if(!el.value) el.classList.add('input-error') });
+                document.getElementById('err-addr').classList.remove('hidden');
+                isValid = false;
+            }
+
+            if (isValid) window.showView('instruction');
+        };
+
+        window.handleImageSelect = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 400; 
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    selectedImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    document.getElementById('preview-img').src = selectedImageBase64;
+                    document.getElementById('preview-img').classList.remove('hidden');
+                    document.getElementById('placeholder-ui').classList.add('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
 
         window.showView = (view) => {
-            ['shop', 'cart', 'checkout', 'admin', 'success', 'payment'].forEach(v => {
-                document.getElementById(v + '-view').classList.add('hidden');
+            ['shop', 'cart', 'checkout', 'instruction', 'payment', 'success', 'admin'].forEach(v => {
+                const el = document.getElementById(v + '-view');
+                if (el) el.classList.add('hidden');
             });
             document.getElementById(view + '-view').classList.remove('hidden');
             document.getElementById('category-bar').classList.toggle('hidden', view !== 'shop');
@@ -250,8 +341,6 @@
             updateUI();
         };
 
-        window.addToCart = (id) => window.updateCartQty(id, 1);
-
         function updateUI() {
             const totalQty = cart.reduce((a, b) => a + b.qty, 0);
             const countEl = document.getElementById('cart-count');
@@ -261,10 +350,12 @@
             list.innerHTML = cart.map(item => `
                 <div class="bg-[#1e1e1e] p-4 rounded-2xl flex justify-between items-center border border-white/5">
                     <div class="flex items-center gap-3">
-                        <span class="text-2xl">${item.emoji || '📦'}</span>
+                        <div class="w-12 h-12 rounded-lg bg-black/40 overflow-hidden">
+                            ${item.image ? `<img src="${item.image}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-xs">📦</div>`}
+                        </div>
                         <div>
-                            <p class="text-[8px] text-[#fbbf24] font-black uppercase mb-0.5">${item.category}</p>
                             <p class="font-bold text-sm text-white uppercase">${item.name}</p>
+                            <p class="text-[10px] text-[#fbbf24] font-bold">${item.price}€</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-3 bg-black/40 rounded-lg p-1">
@@ -279,55 +370,71 @@
 
         window.sendOrder = async () => {
             const btn = document.getElementById('confirm-btn');
-            const n = document.getElementById('f-name').value, ph = document.getElementById('f-phone').value, addr = document.getElementById('f-addr').value;
-            if(!n || !ph || !addr) return alert("Заполните данные!");
+            const name = document.getElementById('f-name').value;
+            const tg = document.getElementById('f-tg').value;
+            const street = document.getElementById('f-street').value;
+            const zip = document.getElementById('f-zip').value;
+            const city = document.getElementById('f-city').value;
+            
             btn.disabled = true; btn.innerText = "ОБРАБОТКА...";
+            
             try {
                 const batch = db.batch();
                 for (const item of cart) {
-                    const ref = db.collection('products').doc(item.id);
+                    const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('products').doc(item.id);
                     batch.update(ref, { stock: firebase.firestore.FieldValue.increment(-item.qty) });
                 }
                 await batch.commit();
+
                 const orderID = Math.floor(Math.random()*9000)+1000;
                 const total = cart.reduce((a,b)=>a+(Number(b.price)*b.qty),0);
-                const text = `🔥 *ЗАКАЗ №${orderID}*\n👤 Имя: ${n}\n📞 Тел: ${ph}\n📍 Адрес: ${addr}\n📦 Товары:\n${cart.map(i=>`${i.emoji||'📦'} ${i.name} (${i.qty} шт.)`).join('\n')}\n💰 Итого: *${total}€*`;
-                await fetch(`https://api.telegram.org/bot${TG.token}/sendMessage`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({chat_id:TG.chatId, text, parse_mode:'Markdown'}) });
+                
+                const text = `🔥 *ЗАКАЗ №${orderID}*\n\n👤 Клиент: ${name}\n✈️ Telegram: ${tg}\n\n📍 Адрес доставки:\n${street}\n${zip} ${city}\nGERMANY 🇩🇪\n\n📦 Товары:\n${cart.map(i=>`• ${i.name} (x${i.qty})`).join('\n')}\n\n💰 Итого: *${total}€*`;
+                
+                await fetch(`https://api.telegram.org/bot${TG.token}/sendMessage`, {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({chat_id:TG.chatId, text, parse_mode:'Markdown'})
+                });
+                
                 document.getElementById('order-num').innerText = orderID;
                 window.showView('success');
                 cart = []; updateUI();
-            } catch (e) { alert("Ошибка!"); }
+            } catch (e) { alert("Ошибка сохранения заказа."); }
             btn.disabled = false; btn.innerText = "Я оплатил";
         };
 
         window.updateSettings = async () => {
             const val = document.getElementById('admin-card-input').value;
-            await db.collection('settings').doc('general').set({ cardNum: val });
-            alert("Сохранено!");
+            await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('settings').doc('general').set({ cardNum: val });
+            alert("Реквизиты обновлены!");
         };
-        window.addCategory = async () => {
-            const el = document.getElementById('new-cat-name');
-            if(el.value.trim()) { await db.collection('categories').add({ name: el.value.trim().toUpperCase(), createdAt: new Date() }); el.value = ''; }
-        };
-        window.updateCategory = async (id) => {
-            const name = document.getElementById(`cat-input-${id}`).value;
-            await db.collection('categories').doc(id).update({ name });
-        };
-        window.delCategory = async (id) => { if(confirm("Удалить?")) await db.collection('categories').doc(id).delete(); };
+
         window.addProduct = async () => {
-            const n = document.getElementById('prod-name').value, p = document.getElementById('prod-price').value,
-                  s = document.getElementById('prod-stock').value, c = document.getElementById('prod-cat').value,
-                  e = document.getElementById('prod-emoji').value, bg = document.getElementById('prod-bg').value;
-            if(n && p) {
-                await db.collection('products').add({ 
-                    name: n, price: Number(p), stock: Number(s)||0, category: c, 
-                    emoji: e || '📦', bgColor: bg || '#1a1a1a', createdAt: new Date() 
+            const n = document.getElementById('prod-name').value;
+            const p = document.getElementById('prod-price').value;
+            const s = document.getElementById('prod-stock').value;
+            const c = document.getElementById('prod-cat').value;
+            const btn = document.getElementById('add-prod-btn');
+            if(!n || !p) return alert("Заполните данные!");
+            btn.disabled = true;
+            try {
+                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('products').add({ 
+                    name: n, price: Number(p), stock: Number(s)||0, category: c, image: selectedImageBase64, createdAt: new Date() 
                 });
-                ['prod-name','prod-price','prod-stock','prod-emoji'].forEach(id => document.getElementById(id).value = '');
-            }
+                ['prod-name','prod-price','prod-stock'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('preview-img').classList.add('hidden');
+                document.getElementById('placeholder-ui').classList.remove('hidden');
+                selectedImageBase64 = "";
+            } catch (e) { alert("Ошибка."); }
+            btn.disabled = false;
         };
-        window.updateStock = async (id, v) => { await db.collection('products').doc(id).update({ stock: Number(v) }); };
-        window.delProduct = async (id) => { if(confirm("Удалить?")) await db.collection('products').doc(id).delete(); };
+
+        window.updateStock = async (id, v) => { 
+            await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('products').doc(id).update({ stock: Number(v) }); 
+        };
+        window.delProduct = async (id) => { 
+            if(confirm("Удалить?")) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('products').doc(id).delete(); 
+        };
 
         window.tryLogin = () => { if(document.getElementById('adm-pass').value === 'danil2409') { window.closeAuth(); window.showView('admin'); } };
         window.closeAuth = () => document.getElementById('auth-modal').classList.add('hidden');
@@ -346,21 +453,18 @@
                         <span class="text-[#fbbf24] font-black text-sm">${qty}</span>
                         <button onclick="window.updateCartQty('${p.id}', 1)" class="text-white w-8 h-full font-black text-lg" ${qty >= p.stock ? 'disabled style="opacity:0.3"' : ''}>+</button>
                     </div>` : 
-                    `<button onclick="window.addToCart('${p.id}')" class="w-10 h-10 fire-gradient text-black rounded-xl font-black text-xl btn-push shadow-lg shadow-orange-500/20">+</button>`;
+                    `<button onclick="window.updateCartQty('${p.id}', 1)" class="w-10 h-10 fire-gradient text-black rounded-xl font-black text-xl btn-push shadow-lg shadow-orange-500/20">+</button>`;
 
                 return `
-                <div class="bg-[#1a1a1a] p-4 rounded-3xl border border-white/5 flex flex-col relative overflow-hidden shadow-lg">
-                    <span class="absolute top-3 right-3 text-[7px] font-black text-[#fbbf24] opacity-50 uppercase">${p.category}</span>
-                    <div class="aspect-square rounded-2xl mb-3 flex flex-row items-center justify-center overflow-hidden p-1 shadow-inner" style="background-color: ${p.bgColor || 'rgba(0,0,0,0.4)'}">
-                        <span class="text-4xl leading-none text-center whitespace-nowrap tracking-tighter">
-                            ${p.emoji || '📦'}
-                        </span>
+                <div class="bg-[#1a1a1a] p-3 rounded-3xl border border-white/5 flex flex-col relative overflow-hidden shadow-lg">
+                    <div class="aspect-square bg-[#252525] rounded-2xl mb-3 overflow-hidden shadow-inner">
+                        ${p.image ? `<img src="${p.image}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-2xl">📦</div>`}
                     </div>
-                    <h3 class="text-[12px] font-bold uppercase h-8 line-clamp-2 leading-tight mb-1 text-white">${p.name}</h3>
-                    <p class="text-[9px] text-zinc-400 font-bold mb-3 uppercase italic text-white/60">Остаток: ${p.stock}</p>
+                    <h3 class="text-[11px] font-bold uppercase h-8 line-clamp-2 leading-tight mb-1 text-white">${p.name}</h3>
+                    <p class="text-[9px] text-zinc-400 font-bold mb-3 uppercase italic">Stock: ${p.stock}</p>
                     <div class="mt-auto flex justify-between items-center gap-2">
                         <span class="text-lg font-black text-white whitespace-nowrap">${p.price}€</span>
-                        <div class="flex justify-end min-w-[80px]">${btnHTML}</div>
+                        <div class="flex justify-end min-w-[70px]">${btnHTML}</div>
                     </div>
                 </div>`;
             }).join('');
@@ -375,26 +479,20 @@
                 bar.innerHTML = h;
             }
             renderShop();
-            const aCat = document.getElementById('admin-categories-list');
-            if(aCat) aCat.innerHTML = categories.map(c => `
-                <div class="flex gap-2 bg-black/40 p-2 rounded-xl border border-white/5 items-center">
-                    <input id="cat-input-${c.id}" value="${c.name}" class="flex-grow bg-transparent text-sm font-bold uppercase outline-none text-white px-2">
-                    <button onclick="window.updateCategory('${c.id}')" class="text-[#4ade80] font-black text-[9px] px-2 py-2 bg-green-500/10 rounded-lg">SAVE</button>
-                    <button onclick="window.delCategory('${c.id}')" class="text-red-500 font-black text-[9px] px-2 py-2 bg-red-500/10 rounded-lg">DEL</button>
-                </div>`).join('');
             const aProd = document.getElementById('admin-products-list');
             if(aProd) aProd.innerHTML = products.map(p => `
                 <div class="bg-black/40 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
                     <div class="flex items-center gap-3 w-1/2">
-                        <span class="text-xl p-1 rounded" style="background-color: ${p.bgColor}">${p.emoji || '📦'}</span>
+                        <div class="w-10 h-10 rounded bg-black/50 overflow-hidden">
+                            ${p.image ? `<img src="${p.image}" class="w-full h-full object-cover">` : `<div class="text-[8px] flex h-full items-center justify-center text-white/20">НЕТ</div>`}
+                        </div>
                         <div class="truncate">
-                            <p class="text-[8px] text-[#fbbf24] font-black uppercase">${p.category}</p>
                             <p class="text-[11px] font-bold uppercase text-white truncate">${p.name}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-3">
                         <input type="number" value="${p.stock}" onchange="window.updateStock('${p.id}', this.value)" class="w-10 bg-black/50 text-center rounded-lg text-xs py-2 font-bold outline-none border border-white/5 text-white">
-                        <button onclick="window.delProduct('${p.id}')" class="text-red-500 font-black px-3 py-2 bg-red-500/10 rounded-lg text-[10px]">DEL</button>
+                        <button onclick="window.delProduct('${p.id}')" class="text-red-500 font-black px-3 py-2 bg-red-500/10 rounded-lg text-[10px]">УД</button>
                     </div>
                 </div>`).join('');
             const sel = document.getElementById('prod-cat');
@@ -402,9 +500,16 @@
             if(document.getElementById('admin-card-input')) document.getElementById('admin-card-input').value = settings.cardNum || '';
         }
 
-        db.collection('settings').doc('general').onSnapshot(d => { if(d.exists) settings = d.data(); render(); });
-        db.collection('categories').orderBy('createdAt','asc').onSnapshot(s => { categories = s.docs.map(d=>({id:d.id,...d.data()})); render(); });
-        db.collection('products').orderBy('createdAt','desc').onSnapshot(s => { products = s.docs.map(d=>({id:d.id,...d.data()})); render(); });
+        // Listeners
+        auth.onAuthStateChanged((user) => {
+            if (!user) return;
+            const publicPath = db.collection('artifacts').doc(appId).collection('public').doc('data');
+            
+            publicPath.collection('settings').doc('general').onSnapshot(d => { if(d.exists) settings = d.data(); render(); });
+            publicPath.collection('categories').orderBy('createdAt','asc').onSnapshot(s => { categories = s.docs.map(d=>({id:d.id,...d.data()})); render(); });
+            publicPath.collection('products').orderBy('createdAt','desc').onSnapshot(s => { products = s.docs.map(d=>({id:d.id,...d.data()})); render(); });
+        });
+
     </script>
 </body>
 </html>
