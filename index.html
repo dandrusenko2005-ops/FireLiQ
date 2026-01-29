@@ -42,7 +42,10 @@
 
         <!-- Корзина -->
         <div id="cart-view" class="hidden space-y-4">
-            <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Корзина</h2>
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Корзина</h2>
+                <button onclick="window.showView('shop')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">НАЗАД</button>
+            </div>
             <div id="cart-items" class="space-y-2"></div>
             <div class="bg-[#1a1a1a] p-6 rounded-3xl mt-4">
                 <div class="flex justify-between items-center mb-4">
@@ -55,7 +58,10 @@
 
         <!-- Оформление -->
         <div id="checkout-view" class="hidden space-y-4">
-            <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Доставка</h2>
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Доставка</h2>
+                <button onclick="window.showView('cart')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">НАЗАД</button>
+            </div>
             <input id="f-name" class="input-flat" placeholder="Имя">
             <input id="f-phone" class="input-flat" placeholder="Телефон">
             <input id="f-addr" class="input-flat" placeholder="Адрес">
@@ -63,12 +69,15 @@
         </div>
 
         <!-- Оплата -->
-        <div id="payment-view" class="hidden text-center space-y-6">
-            <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Оплата</h2>
-            <div class="bg-[#1a1a1a] p-8 rounded-3xl border border-white/5">
+        <div id="payment-view" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Оплата</h2>
+                <button onclick="window.showView('checkout')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">НАЗАД</button>
+            </div>
+            <div class="bg-[#1a1a1a] p-8 rounded-3xl border border-white/5 text-center">
                 <p class="text-[10px] text-zinc-500 uppercase font-black mb-4">Реквизиты для перевода:</p>
                 <div class="text-xl font-black text-white tracking-widest mb-6" id="display-card-num">Загрузка...</div>
-                <div class="flex justify-between border-t border-white/5 pt-4">
+                <div class="flex justify-between border-t border-white/5 pt-4 text-left">
                     <span class="text-zinc-500">Сумма:</span>
                     <span id="payment-total" class="font-black text-white text-xl">0€</span>
                 </div>
@@ -149,13 +158,11 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // Стабильный вход для доступа к БД
         auth.signInAnonymously().catch(e => console.error("Auth error:", e));
 
         const TG = { token: "8443611271:AAHQiXYvsOGI5FuoEB-Q0QTgdKleskhS1QQ", chatId: "8480602033" };
         let products = [], categories = [], cart = [], settings = {cardNum: ''}, curCat = 'Все', clicks = 0;
 
-        // Глобальные навигационные функции
         window.showView = (view) => {
             ['shop', 'cart', 'checkout', 'admin', 'success', 'payment'].forEach(v => {
                 const el = document.getElementById(v + '-view');
@@ -191,7 +198,6 @@
             document.getElementById('total-price').innerText = cart.reduce((a, b) => a + Number(b.price), 0) + '€';
         }
 
-        // АДМИН-ЛОГИКА (ЖЕСТКАЯ ПРИВЯЗКА)
         window.updateSettings = async () => {
             const val = document.getElementById('admin-card-input').value;
             await db.collection('settings').doc('general').set({ cardNum: val });
@@ -269,7 +275,6 @@
         };
 
         function render() {
-            // Отрисовка категорий (бар)
             const bar = document.getElementById('category-bar');
             if(bar) {
                 let h = `<button onclick="window.setCat('Все')" class="px-5 py-2.5 rounded-xl bg-[#1a1a1a] text-[10px] font-black uppercase whitespace-nowrap border border-white/5 ${curCat==='Все'?'active-tab':''}">Все</button>`;
@@ -279,7 +284,6 @@
                 bar.innerHTML = h;
             }
 
-            // Отрисовка витрины
             const shop = document.getElementById('shop-view');
             if(shop) {
                 const f = curCat === 'Все' ? products : products.filter(p => p.category === curCat);
@@ -298,7 +302,6 @@
                 }).join('');
             }
 
-            // Админка: Категории
             const aCat = document.getElementById('admin-categories-list');
             if(aCat) {
                 aCat.innerHTML = categories.map(c => `
@@ -310,7 +313,6 @@
                 `).join('');
             }
 
-            // Админка: Товары
             const aProd = document.getElementById('admin-products-list');
             if(aProd) {
                 aProd.innerHTML = products.map(p => `
@@ -335,7 +337,6 @@
             }
         }
 
-        // Слушатели Firestore
         db.collection('settings').doc('general').onSnapshot(d => { if(d.exists) settings = d.data(); render(); });
         db.collection('categories').orderBy('createdAt','asc').onSnapshot(s => { categories = s.docs.map(d=>({id:d.id,...d.data()})); render(); });
         db.collection('products').orderBy('createdAt','desc').onSnapshot(s => { products = s.docs.map(d=>({id:d.id,...d.data()})); render(); });
