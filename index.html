@@ -3,272 +3,307 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FireLiQ Store</title>
-    <!-- Подключаем Tailwind напрямую -->
+    <title>FireLiQ | Cloud Payments</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #0a0a0b; 
-            color: white;
-            margin: 0;
+        body { background: #050505; color: white; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+        .fire-gradient { background: linear-gradient(135deg, #ff4d00 0%, #ff1a00 100%); }
+        .glass { background: rgba(20, 20, 22, 0.8); backdrop-filter: blur(15px); }
+        .neon-border { border: 1px solid rgba(255, 77, 0, 0.2); }
+        .active-tab { background: #ff4d00 !important; color: black !important; font-weight: 900; }
+        .hidden { display: none !important; }
+        .disabled-btn { opacity: 0.5; pointer-events: none; }
+        
+        /* Success Animation */
+        .check-anim {
+            width: 80px; height: 80px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: #ff4d00; box-shadow: 0 0 30px rgba(255, 77, 0, 0.5);
+            margin: 0 auto 20px; animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        /* Стильный лоадер на случай задержки JS */
-        #fallback-loader {
-            position: fixed;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: #0a0a0b;
-            z-index: 9999;
-        }
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(249, 115, 22, 0.1);
-            border-top-color: #f97316;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+        
+        ::-webkit-scrollbar { width: 0; }
     </style>
 </head>
 <body>
-    <div id="fallback-loader">
-        <div class="spinner"></div>
-        <p style="color: #f97316; font-size: 10px; font-weight: 900; margin-top: 15px; letter-spacing: 2px; text-transform: uppercase; font-style: italic;">FireLiQ Cloud</p>
+
+    <!-- Header -->
+    <nav class="sticky top-0 z-50 glass border-b border-white/5 p-4 flex justify-between items-center">
+        <h1 id="logo" class="text-xl font-black italic tracking-tighter cursor-pointer select-none">
+            FIRE<span style="color: #ff4d00;">LIQ</span>
+        </h1>
+        <button onclick="showView('cart')" class="relative bg-zinc-900 p-2 rounded-xl border border-white/5">
+            🛒 <span id="cart-count" class="hidden absolute -top-2 -right-2 bg-orange-600 text-black text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full">0</span>
+        </button>
+    </nav>
+
+    <!-- Categories -->
+    <div id="category-bar" class="p-4 flex gap-2 overflow-x-auto"></div>
+
+    <!-- Main Content -->
+    <main class="p-4 pb-32">
+        <!-- Shop View -->
+        <div id="shop-view" class="grid grid-cols-2 gap-4"></div>
+
+        <!-- Cart View -->
+        <div id="cart-view" class="hidden space-y-6">
+            <h2 class="text-2xl font-black italic uppercase text-orange-500">Корзина</h2>
+            <div id="cart-items" class="space-y-3"></div>
+            <div id="cart-total" class="bg-zinc-900 p-6 rounded-[2rem] border border-white/5">
+                <div class="flex justify-between mb-4">
+                    <span class="text-zinc-500 font-bold">ИТОГО:</span>
+                    <span id="total-price" class="text-2xl font-black">0€</span>
+                </div>
+                <button onclick="showView('checkout')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-2xl">Оформить доставку</button>
+            </div>
+            <button onclick="showView('shop')" class="w-full text-zinc-500 font-bold text-xs uppercase mt-4 text-center">← В магазин</button>
+        </div>
+
+        <!-- Checkout View -->
+        <div id="checkout-view" class="hidden space-y-4">
+            <h2 class="text-2xl font-black italic uppercase text-orange-500">Доставка</h2>
+            <div class="space-y-3">
+                <input id="f-name" class="w-full bg-zinc-900 border border-white/10 p-4 rounded-2xl outline-none" placeholder="ВАШЕ ИМЯ">
+                <input id="f-phone" class="w-full bg-zinc-900 border border-white/10 p-4 rounded-2xl outline-none" placeholder="ТЕЛЕФОН">
+                <input id="f-addr" class="w-full bg-zinc-900 border border-white/10 p-4 rounded-2xl outline-none" placeholder="АДРЕС">
+            </div>
+            <button onclick="showView('payment')" class="w-full py-5 fire-gradient text-black font-black uppercase rounded-2xl mt-4">К оплате</button>
+            <button onclick="showView('cart')" class="w-full text-zinc-500 font-bold text-xs uppercase text-center">Назад в корзину</button>
+        </div>
+
+        <!-- PAYMENT VIEW -->
+        <div id="payment-view" class="hidden space-y-6 text-center">
+            <h2 class="text-2xl font-black italic uppercase text-orange-500">Оплата</h2>
+            <div class="bg-zinc-900 p-8 rounded-[2.5rem] border border-white/10 space-y-4">
+                <p class="text-zinc-400 text-xs uppercase font-bold tracking-widest">Переведите сумму на карту:</p>
+                <div class="bg-black p-4 rounded-2xl border border-orange-500/20">
+                    <p id="display-card-num" class="text-xl font-black tracking-wider">---- ---- ---- ----</p>
+                </div>
+                <div class="flex justify-between items-center text-sm px-2">
+                    <span class="text-zinc-500">К оплате:</span>
+                    <span id="payment-total" class="font-black text-xl text-orange-500">0€</span>
+                </div>
+            </div>
+            <p class="text-[10px] text-zinc-500 uppercase px-6">Заказ будет обработан после подтверждения перевода администратором</p>
+            <button onclick="sendOrder()" id="confirm-btn" class="w-full py-5 fire-gradient text-black font-black uppercase rounded-2xl">Я ОПЛАТИЛ</button>
+            <button onclick="showView('checkout')" class="w-full text-zinc-500 font-bold text-xs uppercase text-center">Изменить данные</button>
+        </div>
+
+        <!-- SUCCESS VIEW -->
+        <div id="success-view" class="hidden flex flex-col items-center justify-center text-center py-20 px-6">
+            <div class="check-anim text-black text-4xl">✓</div>
+            <h2 class="text-3xl font-black italic uppercase mb-2">ПРИНЯТО!</h2>
+            <p class="text-zinc-400 text-sm mb-6">
+                Ваш заказ №<span id="order-num" class="text-white font-bold">---</span> на проверке.<br>
+                Ожидайте уведомления.
+            </p>
+            <button onclick="showView('shop')" class="px-10 py-4 border border-orange-500/30 rounded-2xl text-[10px] font-black uppercase tracking-widest">Вернуться</button>
+        </div>
+
+        <!-- Admin View -->
+        <div id="admin-view" class="hidden space-y-8">
+            <div class="flex justify-between items-center">
+                <h2 class="text-orange-500 font-black italic uppercase">Управление</h2>
+                <button onclick="showView('shop')" class="text-xs text-zinc-500">ВЫЙТИ</button>
+            </div>
+
+            <!-- Card Settings -->
+            <div class="bg-zinc-900 p-5 rounded-3xl space-y-3">
+                <p class="text-[10px] font-black text-zinc-500 uppercase text-center">Настройка реквизитов</p>
+                <input id="admin-card-input" class="w-full bg-black p-3 rounded-xl border border-white/5 text-sm text-orange-500 font-bold" placeholder="Номер карты">
+                <button onclick="updateSettings()" class="w-full py-2 bg-white text-black text-[10px] font-black rounded-lg">ОБНОВИТЬ КАРТУ</button>
+            </div>
+
+            <div class="bg-zinc-900 p-5 rounded-3xl space-y-3">
+                <p class="text-[10px] font-black text-zinc-500 uppercase text-center">Новая категория</p>
+                <div class="flex gap-2">
+                    <input id="new-cat-name" class="flex-grow bg-black p-3 rounded-xl border border-white/5 text-sm" placeholder="Название">
+                    <button onclick="addCategory()" class="bg-white text-black px-4 rounded-xl font-bold">+</button>
+                </div>
+                <div id="admin-categories" class="flex flex-wrap gap-2 pt-2"></div>
+            </div>
+
+            <div class="bg-zinc-900 p-5 rounded-3xl space-y-3">
+                <p class="text-[10px] font-black text-zinc-500 uppercase text-center">Добавить товар</p>
+                <input id="prod-name" class="w-full bg-black p-3 rounded-xl text-sm" placeholder="Название">
+                <div class="flex gap-2">
+                    <input id="prod-price" class="w-1/2 bg-black p-3 rounded-xl text-sm" placeholder="Цена €">
+                    <input id="prod-stock" type="number" class="w-1/2 bg-black p-3 rounded-xl text-sm" placeholder="Склад шт">
+                </div>
+                <select id="prod-cat" class="w-full bg-black p-3 rounded-xl text-sm text-zinc-400"></select>
+                <button onclick="addProduct()" class="w-full py-3 fire-gradient text-black font-black rounded-xl">ДОБАВИТЬ</button>
+            </div>
+
+            <div id="admin-products-list" class="space-y-3 pb-20"></div>
+        </div>
+    </main>
+
+    <!-- Auth -->
+    <div id="auth-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/95">
+        <div class="bg-zinc-900 p-8 rounded-[2.5rem] border border-white/10 w-full max-w-xs space-y-4">
+            <input id="adm-pass" type="password" class="w-full bg-black p-4 rounded-2xl text-center font-bold outline-none" placeholder="PASS">
+            <button onclick="tryLogin()" class="w-full py-3 fire-gradient text-black rounded-xl font-black uppercase">ВХОД</button>
+            <button onclick="closeAuth()" class="w-full text-zinc-600 text-[10px] font-black uppercase text-center block mt-2">ОТМЕНА</button>
+        </div>
     </div>
 
-    <div id="root"></div>
-
-    <!-- Библиотеки -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <script type="text/babel">
-        // Импортируем Firebase модули через динамический импорт для стабильности в Preview
-        const initFirebase = async () => {
-            const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
-            const { getFirestore, collection, doc, onSnapshot, addDoc, serverTimestamp, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-            const { getAuth, signInAnonymously, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
-
-            const firebaseConfig = {
-                apiKey: "AIzaSyAb8gtyyzMqxEOiK9f9lOWN7stwAbLzakc",
-                authDomain: "fireliq-15259.firebaseapp.com",
-                projectId: "fireliq-15259",
-                storageBucket: "fireliq-15259.firebasestorage.app",
-                messagingSenderId: "752537372890",
-                appId: "1:752537372890:web:1afa9447329ea31ec57de3"
-            };
-
-            const app = initializeApp(firebaseConfig);
-            const db = getFirestore(app);
-            const auth = getAuth(app);
-
-            return { db, auth, collection, doc, onSnapshot, addDoc, serverTimestamp, deleteDoc, signInAnonymously, onAuthStateChanged };
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAb8gtyyzMqxEOiK9f9lOWN7stwAbLzakc",
+            authDomain: "fireliq-15259.firebaseapp.com",
+            projectId: "fireliq-15259",
+            storageBucket: "fireliq-15259.firebasestorage.app",
+            messagingSenderId: "752537372890",
+            appId: "1:752537372890:web:1afa9447329ea31ec57de3"
         };
+        const TG_CONFIG = { token: "8443611271:AAHQiXYvsOGI5FuoEB-Q0QTgdKleskhS1QQ", chatId: "8480602033" };
 
-        const { useState, useEffect } = React;
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        let products = [], categories = [], cart = [], settings = {cardNum: '----'}, curCat = 'Все', clicks = 0;
 
-        function App() {
-            const [fb, setFb] = useState(null);
-            const [user, setUser] = useState(null);
-            const [view, setView] = useState('shop');
-            const [isAdmin, setIsAdmin] = useState(false);
-            const [products, setProducts] = useState([]);
-            const [orders, setOrders] = useState([]);
-            const [cart, setCart] = useState({});
-            const [loading, setLoading] = useState(true);
-            const [clickCount, setClickCount] = useState(0);
-            const [showPassModal, setShowPassModal] = useState(false);
-            const [passInput, setPassInput] = useState('');
-            const [formData, setFormData] = useState({ name: '', phone: '', city: '', street: '' });
-
-            const ADMIN_PASSWORD = "danil2409";
-            const TELEGRAM_BOT_TOKEN = "8443611271:AAHQiXYvsOGI5FuoEB-Q0QTgdKleskhS1QQ";
-            const TELEGRAM_CHAT_ID = "8480602033";
-
-            useEffect(() => {
-                initFirebase().then(services => {
-                    setFb(services);
-                    services.signInAnonymously(services.auth);
-                    services.onAuthStateChanged(services.auth, (u) => {
-                        setUser(u);
-                        document.getElementById('fallback-loader').style.display = 'none';
-                    });
-                });
-            }, []);
-
-            useEffect(() => {
-                if (!user || !fb) return;
-                
-                const pUnsub = fb.onSnapshot(fb.collection(fb.db, 'products'), s => {
-                    setProducts(s.docs.map(d => ({ id: d.id, ...d.data() })));
-                    setLoading(false);
-                });
-
-                const oUnsub = fb.onSnapshot(fb.collection(fb.db, 'orders'), s => {
-                    setOrders(s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
-                });
-
-                return () => { pUnsub(); oUnsub(); };
-            }, [user, fb]);
-
-            const sendTG = async (data, total) => {
-                const list = data.items.map(i => `🔹 ${i.flavor} x${i.qty}`).join('\n');
-                const msg = `🔥 НОВЫЙ ЗАКАЗ\n👤 ${data.customer.name}\n📞 ${data.customer.phone}\n📍 ${data.customer.city}\n🏠 ${data.customer.street}\n📦 Товары:\n${list}\n💰 Итого: ${total}€`;
-                try {
-                    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg })
-                    });
-                } catch(e) { console.error(e); }
-            };
-
-            const submitOrder = async () => {
-                if (!formData.name || !formData.phone) return alert("Заполни данные!");
-                const items = Object.values(cart).map(i => ({ flavor: i.flavor, qty: i.qty, price: i.price }));
-                const total = items.reduce((s, i) => s + (Number(i.price) * i.qty), 0);
-                
-                try {
-                    await fb.addDoc(fb.collection(fb.db, 'orders'), { 
-                        customer: formData, items, total, createdAt: fb.serverTimestamp() 
-                    });
-                    await sendTG({ customer: formData, items }, total);
-                    setCart({});
-                    setView('success');
-                } catch(e) { alert("Ошибка сохранения!"); }
-            };
-
-            const totalAmount = Object.values(cart).reduce((s, i) => s + (Number(i.price) * i.qty), 0);
-
-            if (!user) return null;
-
-            return (
-                <div className="max-w-md mx-auto min-h-screen bg-[#0a0a0b] flex flex-col text-white font-sans">
-                    {/* Header */}
-                    <header className="sticky top-0 z-50 bg-[#0a0a0b]/80 backdrop-blur-lg border-b border-white/5 p-4 flex justify-between items-center">
-                        <h1 className="text-2xl font-black italic uppercase tracking-tighter" onClick={() => {
-                            setClickCount(c => c + 1);
-                            if(clickCount + 1 >= 10) { setShowPassModal(true); setClickCount(0); }
-                        }}>FireLiQ<span className="text-orange-500">.</span></h1>
-                        <div className="flex gap-2">
-                            {isAdmin && <button onClick={() => setView('admin')} className="p-2 bg-zinc-900 rounded-xl text-orange-500 border border-orange-500/20">⚙️</button>}
-                            <button onClick={() => setView('cart')} className="p-2 bg-zinc-900 rounded-xl border border-white/5">🛒</button>
-                        </div>
-                    </header>
-
-                    {/* Content */}
-                    <main className="p-4 flex-grow">
-                        {view === 'shop' && (
-                            <div className="grid grid-cols-2 gap-4 pb-24">
-                                {products.map(p => (
-                                    <div key={p.id} className="bg-zinc-900/50 border border-white/5 rounded-[2rem] p-4 space-y-3">
-                                        <div className="aspect-square bg-zinc-800 rounded-3xl flex items-center justify-center text-4xl font-black italic text-white/5">FL</div>
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase text-zinc-500 truncate">{p.flavor}</p>
-                                            <div className="flex justify-between items-center mt-1">
-                                                <span className="text-lg font-black">{p.price}€</span>
-                                                <button onClick={() => setCart({...cart, [p.id]: { ...p, qty: (cart[p.id]?.qty || 0) + 1 }})} className="w-10 h-10 bg-orange-500 text-black rounded-xl font-black shadow-lg shadow-orange-500/20">+</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {view === 'cart' && (
-                            <div className="space-y-4">
-                                <button onClick={() => setView('shop')} className="text-xs font-bold text-zinc-500 uppercase">← Назад</button>
-                                <h2 className="text-2xl font-black uppercase italic">Корзина</h2>
-                                {Object.values(cart).map(i => (
-                                    <div key={i.id} className="bg-zinc-900 p-4 rounded-2xl flex justify-between items-center">
-                                        <p className="text-xs font-black uppercase">{i.flavor} x{i.qty}</p>
-                                        <button onClick={() => { const n = {...cart}; delete n[i.id]; setCart(n); }} className="text-red-500">✕</button>
-                                    </div>
-                                ))}
-                                {totalAmount > 0 ? (
-                                    <button onClick={() => setView('checkout')} className="w-full py-5 bg-orange-500 text-black font-black uppercase italic rounded-2xl">К оформлению — {totalAmount}€</button>
-                                ) : <p className="text-center py-20 opacity-20 italic">Пусто</p>}
-                            </div>
-                        )}
-
-                        {view === 'checkout' && (
-                            <div className="space-y-4">
-                                <h2 className="text-2xl font-black italic uppercase text-orange-500">Доставка</h2>
-                                {['name', 'phone', 'city', 'street'].map(f => (
-                                    <input key={f} className="w-full bg-zinc-900 border border-white/10 p-4 rounded-2xl outline-none focus:border-orange-500" placeholder={f.toUpperCase()} onChange={e => setFormData({...formData, [f]: e.target.value})} />
-                                ))}
-                                <button onClick={submitOrder} className="w-full py-5 bg-orange-500 text-black font-black rounded-2xl uppercase italic">Заказать</button>
-                            </div>
-                        )}
-
-                        {view === 'admin' && (
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-center">
-                                    <h2 className="font-black italic text-orange-500 uppercase">Админка</h2>
-                                    <button onClick={() => setView('shop')} className="text-[10px] text-zinc-500">Выход</button>
-                                </div>
-                                <button onClick={() => {
-                                    const flavor = prompt("Вкус?");
-                                    const price = prompt("Цена?", "15");
-                                    if(flavor) fb.addDoc(fb.collection(fb.db, 'products'), { flavor, price: Number(price), createdAt: fb.serverTimestamp() });
-                                }} className="w-full py-4 border-2 border-dashed border-orange-500/30 text-orange-500 font-black rounded-2xl">+ ДОБАВИТЬ ТОВАР</button>
-                                <div className="space-y-3">
-                                    {orders.map(o => (
-                                        <div key={o.id} className="bg-zinc-900 p-4 rounded-2xl text-[10px] space-y-2">
-                                            <div className="flex justify-between font-black uppercase">
-                                                <span>{o.customer?.name}</span>
-                                                <span className="text-orange-500">{o.total}€</span>
-                                            </div>
-                                            <p className="text-zinc-500">{o.customer?.phone} | {o.customer?.city}</p>
-                                            <button onClick={() => fb.deleteDoc(fb.doc(fb.db, 'orders', o.id))} className="text-red-500 uppercase font-black">Удалить</button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {view === 'success' && (
-                            <div className="text-center py-24 space-y-6">
-                                <div className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center text-4xl mx-auto shadow-2xl">✅</div>
-                                <h2 className="text-3xl font-black uppercase italic">Заказ принят!</h2>
-                                <button onClick={() => setView('shop')} className="px-8 py-3 bg-zinc-900 rounded-xl text-xs font-bold">В МАГАЗИН</button>
-                            </div>
-                        )}
-                    </main>
-
-                    {/* Navbar */}
-                    {view === 'shop' && totalAmount > 0 && (
-                        <div className="fixed bottom-6 left-6 right-6">
-                            <button onClick={() => setView('cart')} className="w-full bg-orange-500 p-5 rounded-[2rem] flex justify-between items-center text-black font-black uppercase italic shadow-2xl shadow-orange-500/40 active:scale-95 transition-transform">
-                                <span>Корзина</span>
-                                <span className="bg-black/10 px-4 py-1 rounded-full">{totalAmount}€</span>
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Pass Modal */}
-                    {showPassModal && (
-                        <div className="fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100] backdrop-blur-md">
-                            <div className="bg-zinc-900 p-8 rounded-[3rem] w-full max-w-xs space-y-6 text-center border border-white/10">
-                                <p className="font-black uppercase italic text-xs text-orange-500">Пароль</p>
-                                <input type="password" value={passInput} onChange={e => setPassInput(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-2xl text-center font-bold tracking-[0.5em] outline-none focus:border-orange-500" autoFocus />
-                                <button onClick={() => { if(passInput === ADMIN_PASSWORD) { setIsAdmin(true); setShowPassModal(false); setView('admin'); } else { setPassInput(''); alert("Нет"); } }} className="w-full py-4 bg-orange-500 text-black font-black rounded-2xl uppercase">Войти</button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
+        function showView(view) {
+            ['shop', 'cart', 'checkout', 'admin', 'success', 'payment'].forEach(v => {
+                const el = document.getElementById(v+'-view');
+                if (el) el.classList.add('hidden');
+            });
+            document.getElementById(view+'-view').classList.remove('hidden');
+            document.getElementById('category-bar').classList.toggle('hidden', view !== 'shop');
+            
+            if(view === 'payment') {
+                const sum = cart.reduce((a, b) => a + Number(b.price), 0);
+                document.getElementById('payment-total').innerText = sum + '€';
+                document.getElementById('display-card-num').innerText = settings.cardNum || 'КАРТА НЕ УКАЗАНА';
+            }
+            window.scrollTo(0,0);
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        function render() {
+            const bar = document.getElementById('category-bar');
+            if(!bar) return;
+            bar.innerHTML = `<button onclick="setCat('Все')" class="px-5 py-2 rounded-full bg-zinc-900 text-[10px] font-black uppercase tracking-tighter whitespace-nowrap ${curCat==='Все'?'active-tab':''}">Все</button>`;
+            categories.forEach(c => {
+                bar.innerHTML += `<button onclick="setCat('${c.name}')" class="px-5 py-2 rounded-full bg-zinc-900 text-[10px] font-black uppercase tracking-tighter whitespace-nowrap ${curCat===c.name?'active-tab':''}"># ${c.name}</button>`;
+            });
+
+            const grid = document.getElementById('shop-view');
+            grid.innerHTML = '';
+            const filtered = curCat === 'Все' ? products : products.filter(p => p.category === curCat);
+            filtered.forEach(p => {
+                const out = Number(p.stock) <= 0;
+                grid.innerHTML += `
+                    <div class="bg-zinc-900/40 p-4 rounded-[2rem] neon-border flex flex-col relative">
+                        <span class="absolute top-3 right-3 text-[7px] font-black text-orange-500 uppercase">${p.category}</span>
+                        <div class="aspect-square bg-black/40 rounded-3xl mb-3 flex items-center justify-center text-zinc-800 font-black italic text-2xl">FL</div>
+                        <h3 class="text-[11px] font-black uppercase mb-1 h-8 line-clamp-2">${p.name}</h3>
+                        <p class="text-[9px] text-zinc-500 font-bold mb-3 uppercase">${out ? 'Распродано' : 'Склад: '+p.stock}</p>
+                        <div class="flex justify-between items-center mt-auto">
+                            <span class="text-lg font-black">${p.price}€</span>
+                            <button onclick="buy('${p.id}')" ${out ? 'disabled' : ''} class="w-9 h-9 fire-gradient text-black rounded-xl font-black ${out ? 'disabled-btn' : ''}">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('prod-cat').innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            document.getElementById('admin-categories').innerHTML = categories.map(c => `
+                <div class="bg-black px-3 py-1 rounded-lg text-[10px] flex items-center gap-2 border border-white/5 uppercase font-bold">
+                    ${c.name} <button onclick="delCat('${c.id}')" class="text-red-500">✕</button>
+                </div>
+            `).join('');
+
+            document.getElementById('admin-products-list').innerHTML = products.map(p => `
+                <div class="bg-zinc-900/50 p-4 rounded-2xl border border-white/5 space-y-2">
+                    <div class="flex justify-between items-center"><span class="text-[10px] font-black uppercase">${p.name}</span><button onclick="delProd('${p.id}')" class="text-red-500 text-[10px] font-black">УДАЛИТЬ</button></div>
+                    <div class="flex gap-2">
+                        <div class="flex-grow flex items-center bg-black px-3 rounded-lg"><span class="text-[8px] text-zinc-500 mr-2 uppercase">Stock:</span><input type="number" value="${p.stock}" onchange="updateStock('${p.id}', this.value)" class="bg-transparent text-[10px] font-bold outline-none w-full py-2"></div>
+                        <div class="bg-black px-4 flex items-center rounded-lg text-[10px] font-bold text-orange-500">${p.price}€</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            if(document.getElementById('admin-card-input')) {
+                document.getElementById('admin-card-input').value = settings.cardNum || '';
+            }
+        }
+
+        function setCat(c) { curCat = c; render(); }
+        function buy(id) {
+            const p = products.find(x => x.id === id);
+            if (cart.filter(c => c.id === id).length >= p.stock) return;
+            cart.push(p); updateCart();
+        }
+
+        function updateCart() {
+            document.getElementById('cart-count').innerText = cart.length;
+            document.getElementById('cart-count').classList.toggle('hidden', cart.length === 0);
+            document.getElementById('cart-items').innerHTML = cart.map((item, i) => `
+                <div class="bg-zinc-900 p-4 rounded-2xl flex justify-between items-center border border-white/5">
+                    <div><p class="text-[8px] text-orange-500 font-bold uppercase">${item.category}</p><p class="font-bold text-sm uppercase">${item.name}</p></div>
+                    <button onclick="cart.splice(${i},1);updateCart()" class="text-red-500 ml-4 font-bold">✕</button>
+                </div>
+            `).join('');
+            document.getElementById('total-price').innerText = cart.reduce((a, b) => a + Number(b.price), 0) + '€';
+        }
+
+        async function sendOrder() {
+            const btn = document.getElementById('confirm-btn'), n = document.getElementById('f-name').value, p = document.getElementById('f-phone').value, a = document.getElementById('f-addr').value;
+            if(!n || !p) return alert("Заполните данные доставки!");
+            
+            btn.innerText = "ПРОВЕРКА..."; btn.classList.add('disabled-btn');
+
+            try {
+                const counts = {}; cart.forEach(i => counts[i.id] = (counts[i.id] || 0) + 1);
+                const batch = db.batch();
+                for (let id in counts) {
+                    batch.update(db.collection('products').doc(id), { stock: firebase.firestore.FieldValue.increment(-counts[id]) });
+                }
+                await batch.commit();
+
+                const orderID = Math.floor(Math.random() * 9000) + 1000;
+                const total = cart.reduce((a,b)=>a+Number(b.price),0);
+                const text = `💳 *НОВЫЙ ЗАКАЗ №${orderID}*\n(Ожидает оплаты)\n\n👤 Клиент: ${n}\n📞 Тел: ${p}\n📍 Адрес: ${a}\n\n📦 Состав: ${cart.map(i => i.name).join(', ')}\n💰 Сумма: *${total}€*`;
+                
+                await fetch(`https://api.telegram.org/bot${TG_CONFIG.token}/sendMessage`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({chat_id: TG_CONFIG.chatId, text, parse_mode: 'Markdown'}) });
+
+                document.getElementById('order-num').innerText = orderID;
+                showView('success');
+                cart = []; updateCart();
+            } catch (e) { alert("Ошибка склада!"); }
+            btn.innerText = "Я ОПЛАТИЛ"; btn.classList.remove('disabled-btn');
+        }
+
+        // Admin functions
+        async function updateSettings() {
+            const num = document.getElementById('admin-card-input').value;
+            await db.collection('settings').doc('general').set({ cardNum: num });
+            alert("Реквизиты сохранены!");
+        }
+        async function addCategory() { const v = document.getElementById('new-cat-name').value; if(v) await db.collection('categories').add({name: v}); document.getElementById('new-cat-name').value=''; }
+        async function delCat(id) { if(confirm("Удалить?")) await db.collection('categories').doc(id).delete(); }
+        async function addProduct() {
+            const n = document.getElementById('prod-name').value, p = document.getElementById('prod-price').value, s = document.getElementById('prod-stock').value, c = document.getElementById('prod-cat').value;
+            if(n && p) await db.collection('products').add({ name: n, price: Number(p), stock: Number(s)||0, category: c, createdAt: new Date() });
+            ['prod-name','prod-price','prod-stock'].forEach(id => document.getElementById(id).value = '');
+        }
+        async function updateStock(id, v) { await db.collection('products').doc(id).update({ stock: Number(v) }); }
+        async function delProd(id) { if(confirm("Удалить?")) await db.collection('products').doc(id).delete(); }
+
+        document.getElementById('logo').onclick = () => { clicks++; if(clicks >= 5) { document.getElementById('auth-modal').classList.remove('hidden'); clicks = 0; } setTimeout(()=>clicks=0, 2000); };
+        function closeAuth() { document.getElementById('auth-modal').classList.add('hidden'); }
+        function tryLogin() { if(document.getElementById('adm-pass').value === 'danil2409') { closeAuth(); showView('admin'); } }
+
+        db.collection('settings').doc('general').onSnapshot(doc => { if(doc.exists) settings = doc.data(); render(); });
+        db.collection('categories').onSnapshot(s => { categories = s.docs.map(d => ({id: d.id, ...d.data()})); render(); });
+        db.collection('products').orderBy('createdAt', 'desc').onSnapshot(s => { products = s.docs.map(d => ({id: d.id, ...d.data()})); render(); });
     </script>
 </body>
 </html>
