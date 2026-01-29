@@ -1,532 +1,317 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { initializeApp } from 'firebase/app';
-import { 
-  getFirestore, collection, doc, onSnapshot, 
-  setDoc, updateDoc, deleteDoc, query, addDoc, serverTimestamp 
-} from 'firebase/firestore';
-import { 
-  getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken 
-} from 'firebase/auth';
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FireLiQ Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .glass { background: rgba(20, 20, 23, 0.8); backdrop-filter: blur(12px); }
+    </style>
+</head>
+<body class="bg-[#0a0a0b] text-zinc-100 overflow-x-hidden">
+    <div id="root"></div>
 
-// Firebase Config
-const firebaseConfig = JSON.parse(__firebase_config);
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'fireliq-store-unique';
+    <script type="module" typeof="babel">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, doc, onSnapshot, addDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-const ADMIN_PASSWORD = "danil2409"; 
+        // Твоя конфигурация из скриншотов
+        const firebaseConfig = {
+            apiKey: "AIzaSyAb8gtyyzMqxEOiK9f9lOWN7stwAbLzakc",
+            authDomain: "fireliq-15259.firebaseapp.com",
+            projectId: "fireliq-15259",
+            storageBucket: "fireliq-15259.firebasestorage.app",
+            messagingSenderId: "752537372890",
+            appId: "1:752537372890:web:1afa9447329ea31ec57de3"
+        };
 
-// --- НАСТРОЙКИ TELEGRAM ---
-const TELEGRAM_BOT_TOKEN = "8443611271:AAHQiXYvsOGI5FuoEB-Q0QTgdKleskhS1QQ"; 
-const TELEGRAM_CHAT_ID = "8480602033"; 
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        const ADMIN_PASSWORD = "danil2409";
+        const TELEGRAM_BOT_TOKEN = "8443611271:AAHQiXYvsOGI5FuoEB-Q0QTgdKleskhS1QQ";
+        const TELEGRAM_CHAT_ID = "8480602033";
 
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [view, setView] = useState('shop'); 
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [clickCount, setClickCount] = useState(0);
-  const [activeCategory, setActiveCategory] = useState("Все");
-  const [cart, setCart] = useState({});
-  const [showPassModal, setShowPassModal] = useState(false);
-  const [passInput, setPassInput] = useState('');
-  
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+        const { useState, useEffect } = React;
 
-  const [formData, setFormData] = useState({ 
-    name: '', 
-    phone: '', 
-    city: '', 
-    street: '', 
-    zip: '' 
-  });
+        function App() {
+            const [user, setUser] = useState(null);
+            const [view, setView] = useState('shop');
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [products, setProducts] = useState([]);
+            const [orders, setOrders] = useState([]);
+            const [cart, setCart] = useState({});
+            const [loading, setLoading] = useState(true);
+            const [clickCount, setClickCount] = useState(0);
+            const [showPassModal, setShowPassModal] = useState(false);
+            const [passInput, setPassInput] = useState('');
+            const [formData, setFormData] = useState({ name: '', phone: '', city: '', street: '' });
 
-  useEffect(() => {
-    const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
-      }
-    };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
+            useEffect(() => {
+                signInAnonymously(auth).catch(console.error);
+                return onAuthStateChanged(auth, setUser);
+            }, []);
 
-  useEffect(() => {
-    if (!user) return;
+            useEffect(() => {
+                if (!user) return;
+                
+                // Живое обновление товаров
+                const pUnsub = onSnapshot(collection(db, 'products'), s => {
+                    setProducts(s.docs.map(d => ({ id: d.id, ...d.data() })));
+                    setLoading(false);
+                }, (err) => {
+                    console.error("Firestore Error:", err);
+                    setLoading(false);
+                });
 
-    const productsRef = collection(db, 'artifacts', appId, 'public', 'data', 'products');
-    const categoriesDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'categories');
-    const ordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+                // Живое обновление заказов
+                const oUnsub = onSnapshot(collection(db, 'orders'), s => {
+                    setOrders(s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+                });
 
-    const unsubProducts = onSnapshot(productsRef, (snapshot) => {
-      const pData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setProducts(pData);
-      setLoading(false);
-    });
+                return () => { pUnsub(); oUnsub(); };
+            }, [user]);
 
-    const unsubCats = onSnapshot(categoriesDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setCategories(docSnap.data().list || []);
-      } else {
-        const initial = ["Ягоды", "Фрукты", "Тропик", "Энергетик"];
-        setDoc(categoriesDocRef, { list: initial });
-      }
-    });
+            const sendTG = async (data, total) => {
+                const list = data.items.map(i => `🔹 ${i.flavor} x${i.qty}`).join('\n');
+                const msg = `🔥 НОВЫЙ ЗАКАЗ\n👤 ${data.customer.name}\n📞 ${data.customer.phone}\n📍 ${data.customer.city}\n🏠 ${data.customer.street}\n📦 Товары:\n${list}\n💰 Итого: ${total}€`;
+                try {
+                    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg })
+                    });
+                } catch(e) { console.error("TG Error:", e); }
+            };
 
-    const unsubOrders = onSnapshot(ordersRef, (snapshot) => {
-      const oData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setOrders(oData.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
-    });
+            const submitOrder = async () => {
+                if (!formData.name || !formData.phone) return alert("Пожалуйста, заполните Имя и Телефон");
+                const items = Object.values(cart).map(i => ({ flavor: i.flavor, qty: i.qty, price: i.price }));
+                const total = items.reduce((s, i) => s + (Number(i.price) * i.qty), 0);
+                const orderData = { customer: formData, items, total, createdAt: serverTimestamp() };
+                
+                try {
+                    await addDoc(collection(db, 'orders'), orderData);
+                    await sendTG(orderData, total);
+                    setCart({});
+                    setView('success');
+                } catch(e) { 
+                    alert("Ошибка базы данных! Убедись, что нажал 'Publish' во вкладке Rules в Firebase."); 
+                }
+            };
 
-    return () => {
-      unsubProducts();
-      unsubCats();
-      unsubOrders();
-    };
-  }, [user]);
+            const totalAmount = Object.values(cart).reduce((s, i) => s + (Number(i.price) * i.qty), 0);
 
-  const sendTelegramNotification = async (orderData, total) => {
-    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+            if (loading) return (
+                <div className="h-screen flex flex-col items-center justify-center bg-black">
+                    <div className="w-12 h-12 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="mt-4 text-orange-500 font-black italic uppercase tracking-widest text-[10px]">FireLiQ Cloud Loading</p>
+                </div>
+            );
 
-    const itemsList = orderData.items.map(it => `🔹 ${it.flavor} (x${it.qty}) — ${it.price * it.qty}€`).join('\n');
-    
-    const message = `
-🔥 *НОВЫЙ ЗАКАЗ FireLiQ* 🔥
+            return (
+                <div className="max-w-md mx-auto min-h-screen bg-[#0a0a0b] flex flex-col">
+                    {/* Header */}
+                    <header className="sticky top-0 z-[60] glass border-b border-white/5 p-5 flex justify-between items-center">
+                        <h1 className="text-2xl font-[900] italic uppercase tracking-tighter cursor-pointer select-none active:scale-95 transition-transform" 
+                            onClick={() => {
+                                setClickCount(prev => prev + 1);
+                                if(clickCount + 1 >= 10) { setShowPassModal(true); setClickCount(0); }
+                            }}>
+                            FireLiQ<span className="text-orange-500">.</span>
+                        </h1>
+                        <div className="flex items-center gap-3">
+                            {isAdmin && (
+                                <button onClick={() => setView('admin')} className="p-2 bg-zinc-900 rounded-xl border border-orange-500/30 text-orange-500">
+                                    ⚙️
+                                </button>
+                            )}
+                            <button onClick={() => setView('cart')} className="relative p-2 bg-zinc-900 rounded-xl border border-white/10">
+                                🛒
+                                {totalAmount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 text-black text-[10px] font-bold rounded-full flex items-center justify-center">!</span>}
+                            </button>
+                        </div>
+                    </header>
 
-👤 *Клиент:* ${orderData.customer.name}
-📞 *Тел:* ${orderData.customer.phone}
+                    {/* Views */}
+                    <main className="flex-grow p-4">
+                        {view === 'shop' && (
+                            <div className="grid grid-cols-2 gap-4 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                {products.map(p => (
+                                    <div key={p.id} className="bg-[#141417] border border-white/5 rounded-[2rem] p-4 flex flex-col gap-3 shadow-xl">
+                                        <div className="aspect-square bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[1.5rem] flex items-center justify-center text-5xl font-black italic text-orange-500/10 select-none">
+                                            FL
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-zinc-500 tracking-wider truncate">{p.flavor}</p>
+                                            <div className="flex justify-between items-center mt-1">
+                                                <span className="text-xl font-black">{p.price}€</span>
+                                                <button 
+                                                    onClick={() => setCart({...cart, [p.id]: { ...p, qty: (cart[p.id]?.qty || 0) + 1 }})}
+                                                    className="w-10 h-10 bg-orange-500 text-black rounded-xl font-black flex items-center justify-center active:scale-90 transition-transform shadow-lg shadow-orange-500/20">
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {products.length === 0 && (
+                                    <div className="col-span-2 text-center py-20 opacity-20 italic">
+                                        <p>Товары загружаются или отсутствуют...</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
-📍 *Адрес:*
-🌆 Город: ${orderData.customer.city}
-🏠 Улица/Дом: ${orderData.customer.street}
-📮 Индекс: ${orderData.customer.zip}
+                        {view === 'cart' && (
+                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+                                <div className="flex items-center gap-4">
+                                    <button onClick={() => setView('shop')} className="p-2 bg-zinc-900 rounded-lg text-zinc-500">←</button>
+                                    <h2 className="text-2xl font-black uppercase italic">Ваша корзина</h2>
+                                </div>
+                                <div className="space-y-3">
+                                    {Object.values(cart).map(item => (
+                                        <div key={item.id} className="bg-zinc-900/50 p-4 rounded-3xl border border-white/5 flex justify-between items-center">
+                                            <div>
+                                                <p className="font-black uppercase text-xs">{item.flavor}</p>
+                                                <p className="text-orange-500 font-bold text-xs">{item.qty} шт. x {item.price}€</p>
+                                            </div>
+                                            <button onClick={() => { const n = {...cart}; delete n[item.id]; setCart(n); }} className="text-red-500/50 font-bold p-2">✕</button>
+                                        </div>
+                                    ))}
+                                    {totalAmount === 0 && <p className="text-center py-10 opacity-30 italic">В корзине пусто</p>}
+                                </div>
+                                {totalAmount > 0 && (
+                                    <button onClick={() => setView('checkout')} className="w-full py-5 bg-orange-500 text-black font-black uppercase italic rounded-[2rem] shadow-xl shadow-orange-500/10">
+                                        Перейти к оформлению
+                                    </button>
+                                )}
+                            </div>
+                        )}
 
-📦 *Товары:*
-${itemsList}
+                        {view === 'checkout' && (
+                            <div className="space-y-6">
+                                <h2 className="text-2xl font-black uppercase italic text-orange-500">Данные доставки</h2>
+                                <div className="space-y-3">
+                                    {['name', 'phone', 'city', 'street'].map(field => (
+                                        <input 
+                                            key={field}
+                                            className="w-full bg-zinc-900/50 border border-white/10 p-5 rounded-3xl outline-none focus:border-orange-500 transition-colors text-sm" 
+                                            placeholder={field === 'name' ? 'ВАШЕ ИМЯ' : field === 'phone' ? 'НОМЕР ТЕЛЕФОНА' : field === 'city' ? 'ГОРОД' : 'УЛИЦА / ДОМ / КВ'} 
+                                            onChange={e => setFormData({...formData, [field]: e.target.value})}
+                                        />
+                                    ))}
+                                </div>
+                                <button onClick={submitOrder} className="w-full py-6 bg-orange-500 text-black font-black uppercase italic rounded-[2.5rem] shadow-2xl">
+                                    Подтвердить заказ — {totalAmount}€
+                                </button>
+                            </div>
+                        )}
 
-💰 *ИТОГО К ОПЛАТЕ:* ${total}€
-    `.trim();
+                        {view === 'admin' && (
+                            <div className="space-y-8 pb-20">
+                                <div className="flex justify-between items-center">
+                                    <h2 className="text-xl font-black uppercase italic text-orange-500 tracking-tighter">Панель Данила</h2>
+                                    <button onClick={() => setView('shop')} className="text-[10px] font-black opacity-30 uppercase underline">Выйти</button>
+                                </div>
+                                
+                                <div className="bg-zinc-900 p-6 rounded-[2.5rem] border border-orange-500/20">
+                                    <p className="text-[10px] font-black uppercase text-zinc-500 mb-4 text-center tracking-[0.2em]">Новый товар</p>
+                                    <button onClick={() => {
+                                        const flavor = prompt("Название (вкус)?");
+                                        const price = prompt("Цена в €?", "15");
+                                        if(flavor && price) addDoc(collection(db, 'products'), { flavor, price: Number(price), createdAt: serverTimestamp() });
+                                    }} className="w-full py-4 border-2 border-dashed border-orange-500/30 text-orange-500 font-black rounded-2xl hover:bg-orange-500/5">
+                                        + В ОБЛАКО
+                                    </button>
+                                </div>
 
-    try {
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: message,
-          parse_mode: 'Markdown'
-        })
-      });
-    } catch (e) {
-      console.error("Telegram Error:", e);
-    }
-  };
+                                <div className="space-y-4">
+                                    <p className="text-[10px] font-black uppercase text-zinc-500">Список заказов:</p>
+                                    {orders.map(o => (
+                                        <div key={o.id} className="bg-zinc-900/30 p-5 rounded-[2rem] border border-white/5 text-[11px] space-y-3 relative group">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <p className="font-black text-white text-sm uppercase">{o.customer?.name}</p>
+                                                    <p className="text-orange-500 font-bold">{o.customer?.phone}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-black text-lg">{o.total}€</p>
+                                                    <p className="text-[9px] text-zinc-500 uppercase">{o.customer?.city}</p>
+                                                </div>
+                                            </div>
+                                            <div className="bg-black/50 p-3 rounded-2xl space-y-1">
+                                                {o.items?.map((it, idx) => (
+                                                    <p key={idx} className="text-zinc-400">🔥 {it.flavor} <span className="text-zinc-600">x{it.qty}</span></p>
+                                                ))}
+                                            </div>
+                                            <button 
+                                                onClick={() => { if(confirm("Удалить выполненный заказ?")) deleteDoc(doc(db, 'orders', o.id)) }}
+                                                className="w-full py-2 bg-red-500/10 text-red-500 font-black uppercase text-[9px] rounded-xl border border-red-500/20">
+                                                Выполнено / Удалить
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {orders.length === 0 && <p className="text-center py-10 opacity-20 text-xs italic">Заказов пока нет...</p>}
+                                </div>
+                            </div>
+                        )}
 
-  const handleLogoClick = () => {
-    setClickCount(prev => {
-      const next = prev + 1;
-      if (next >= 10) {
-        setShowPassModal(true);
-        return 0;
-      }
-      return next;
-    });
-    setTimeout(() => setClickCount(0), 4000);
-  };
+                        {view === 'success' && (
+                            <div className="flex-grow flex flex-col items-center justify-center text-center p-10 space-y-6 animate-in zoom-in duration-500">
+                                <div className="w-24 h-24 bg-orange-500 rounded-full flex items-center justify-center text-5xl shadow-2xl shadow-orange-500/40">✅</div>
+                                <h2 className="text-4xl font-black italic uppercase tracking-tighter">Успешно!</h2>
+                                <p className="text-zinc-500 text-sm">Ваш заказ принят в облако и отправлен менеджеру в Telegram. Скоро с вами свяжутся!</p>
+                                <button onClick={() => setView('shop')} className="w-full py-5 bg-zinc-900 rounded-[2rem] font-black uppercase italic text-xs border border-white/5">Вернуться в магазин</button>
+                            </div>
+                        )}
+                    </main>
 
-  const checkPassword = () => {
-    if (passInput === ADMIN_PASSWORD) {
-      setIsAdmin(true);
-      setShowPassModal(false);
-      setPassInput('');
-    } else {
-      setPassInput('');
-      setShowPassModal(false);
-    }
-  };
-
-  const submitOrder = async () => {
-    const { name, phone, city, street, zip } = formData;
-    if (!name || !phone || !city || !street || !zip) return;
-    
-    const orderItems = Object.values(cart).map(item => ({
-      flavor: item.flavor,
-      qty: item.qty,
-      price: item.price
-    }));
-
-    const totalAmount = orderItems.reduce((s, i) => s + (i.price * i.qty), 0);
-
-    const fullOrderData = {
-      customer: formData,
-      items: orderItems,
-      total: totalAmount,
-      status: 'new',
-      createdAt: serverTimestamp()
-    };
-
-    try {
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), fullOrderData);
-      
-      await sendTelegramNotification(fullOrderData, totalAmount);
-
-      setCart({});
-      setFormData({ name: '', phone: '', city: '', street: '', zip: '' });
-      setView('success');
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const saveProduct = async (product) => {
-    if (!isAdmin) return;
-    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', product.id.toString()), product);
-  };
-
-  const deleteProduct = async (id) => {
-    if (!isAdmin) return;
-    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id.toString()));
-  };
-
-  const updateCategoriesList = async (newList) => {
-    if (!isAdmin) return;
-    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'categories'), { list: newList });
-  };
-
-  const addToCart = (p) => {
-    const inCart = cart[p.id]?.qty || 0;
-    if (inCart < p.stock) {
-      setCart({...cart, [p.id]: { ...p, qty: inCart + 1 }});
-    }
-  };
-
-  const removeFromCart = (id) => {
-    const newCart = {...cart};
-    if (newCart[id].qty > 1) newCart[id].qty--;
-    else delete newCart[id];
-    setCart(newCart);
-  };
-
-  const filteredProducts = useMemo(() => {
-    if (activeCategory === "Все") return products;
-    return products.filter(p => p.category === activeCategory);
-  }, [products, activeCategory]);
-
-  const total = Object.values(cart).reduce((s, i) => s + (i.price * i.qty), 0);
-
-  if (loading) return (
-    <div className="min-h-screen bg-[#0a0a0b] flex flex-col items-center justify-center text-orange-500 font-black">
-      <span className="text-6xl mb-4 animate-pulse">🔥</span>
-      <p>FIRELIQ ONLINE...</p>
-    </div>
-  );
-
-  return (
-    <div className="max-w-md mx-auto min-h-screen p-4 pb-32 bg-[#0a0a0b] text-zinc-100 font-sans">
-      
-      <header className="flex justify-between items-center py-4 sticky top-0 bg-[#0a0a0b]/95 backdrop-blur-md z-50">
-        <div className="flex items-center gap-2 cursor-pointer select-none" onClick={handleLogoClick}>
-          <span className="text-3xl">🔥</span>
-          <span className="font-black text-2xl italic tracking-tighter uppercase">FireLiQ</span>
-        </div>
-        <div className="flex gap-2">
-          {isAdmin && (
-            <button onClick={() => setView('admin')} className={`w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-900 border ${view === 'admin' ? 'border-orange-500 text-orange-500' : 'border-zinc-800'}`}>
-              ⚙️
-            </button>
-          )}
-          <button onClick={() => setView('cart')} className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 relative">
-            🛒 {total > 0 && <span className="absolute -top-1 -right-1 bg-orange-500 w-4 h-4 rounded-full text-[10px] text-black font-black flex items-center justify-center">!</span>}
-          </button>
-        </div>
-      </header>
-
-      {view === 'shop' && (
-        <div className="animate-in fade-in duration-500">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-6 pt-2">
-            <button onClick={() => setActiveCategory("Все")} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold border transition-colors ${activeCategory === "Все" ? 'bg-orange-500 border-orange-500 text-black' : 'bg-zinc-900 border-zinc-800'}`}>Все</button>
-            {categories.map(cat => (
-              <button key={cat} onClick={() => setActiveCategory(cat)} className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold border transition-colors ${activeCategory === cat ? 'bg-orange-500 border-orange-500 text-black' : 'bg-zinc-900 border-zinc-800'}`}>
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {filteredProducts.map(p => {
-              const inCart = cart[p.id]?.qty || 0;
-              return (
-                <div key={p.id} className="bg-[#141417] border border-zinc-800 rounded-2xl overflow-hidden flex flex-col group">
-                  <div className="h-32 bg-zinc-900 relative flex items-center justify-center overflow-hidden">
-                    {p.image ? (
-                      <img src={p.image} className="w-full h-full object-cover" alt={p.flavor} />
-                    ) : (
-                      <span className="text-4xl opacity-10">🔥</span>
+                    {/* Navbar Cart Button */}
+                    {view === 'shop' && totalAmount > 0 && (
+                        <div className="fixed bottom-8 left-6 right-6 z-50 animate-in slide-in-from-bottom-10">
+                            <button onClick={() => setView('cart')} className="w-full bg-orange-500 p-6 rounded-[2.5rem] flex justify-between items-center text-black font-black uppercase italic shadow-2xl shadow-orange-500/50 active:scale-95 transition-transform">
+                                <span className="tracking-tight">Просмотр корзины</span>
+                                <span className="bg-black/10 px-4 py-1 rounded-full text-xl">{totalAmount}€</span>
+                            </button>
+                        </div>
                     )}
-                    <span className="absolute top-2 left-2 text-[7px] font-black bg-black/60 px-2 py-1 rounded text-orange-400 uppercase tracking-widest">{p.category}</span>
-                  </div>
-                  <div className="p-3 flex flex-col flex-1">
-                    <h4 className="text-xs font-black uppercase truncate text-zinc-100">{p.flavor}</h4>
-                    <div className="mt-auto flex justify-between items-end pt-2">
-                      <div>
-                        <div className="text-[8px] font-bold text-zinc-500 uppercase">Склад: {p.stock}</div>
-                        <div className="text-lg font-black text-white">{p.price}€</div>
-                      </div>
-                      <button 
-                        onClick={() => addToCart(p)}
-                        disabled={inCart >= p.stock || p.stock === 0}
-                        className="w-9 h-9 flex items-center justify-center rounded-xl bg-orange-500 text-black text-xl font-black disabled:opacity-20 active:scale-90 transition-transform"
-                      >
-                        {p.stock === 0 ? 'Ø' : inCart >= p.stock ? 'MAX' : '+'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
-      {view === 'cart' && (
-        <div className="space-y-6 animate-in slide-in-from-right duration-300">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setView('shop')} className="w-10 h-10 rounded-xl bg-zinc-900 text-zinc-400 flex items-center justify-center">←</button>
-            <h2 className="text-2xl font-black uppercase italic">Корзина</h2>
-          </div>
-          {Object.values(cart).length > 0 ? (
-             <div className="space-y-4">
-               {Object.values(cart).map(item => (
-                 <div key={item.id} className="flex justify-between items-center bg-[#141417] p-4 rounded-2xl border border-zinc-800">
-                    <div className="flex gap-3 items-center">
-                        <div className="w-10 h-10 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
-                            {item.image ? <img src={item.image} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[8px]">FIRE</div>}
+                    {/* Password Modal */}
+                    {showPassModal && (
+                        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-6 z-[200] backdrop-blur-md">
+                            <div className="bg-[#141417] p-8 rounded-[3rem] w-full max-w-xs space-y-6 text-center border border-white/10 shadow-2xl">
+                                <p className="font-black uppercase italic text-xs tracking-[0.3em] text-orange-500">Админ Доступ</p>
+                                <input 
+                                    type="password" 
+                                    value={passInput} 
+                                    onChange={e => setPassInput(e.target.value)} 
+                                    className="w-full bg-black border border-white/10 p-5 rounded-[1.5rem] text-center font-bold tracking-[0.5em] outline-none focus:border-orange-500" 
+                                    autoFocus 
+                                />
+                                <div className="flex gap-2">
+                                    <button onClick={() => setShowPassModal(false)} className="flex-1 py-4 bg-zinc-800 text-zinc-500 font-black rounded-2xl uppercase text-[10px]">Назад</button>
+                                    <button onClick={() => { if(passInput === ADMIN_PASSWORD) { setIsAdmin(true); setShowPassModal(false); setView('admin'); } else { setPassInput(''); alert("Неверный пароль!"); } }} className="flex-[2] py-4 bg-orange-500 text-black font-black rounded-2xl uppercase text-[10px]">Войти</button>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <div className="text-[10px] text-orange-500 font-bold uppercase">{item.category}</div>
-                            <div className="font-black text-sm uppercase">{item.flavor}</div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => removeFromCart(item.id)} className="w-8 h-8 rounded-lg bg-zinc-800 font-bold">-</button>
-                      <span className="font-black text-orange-500 w-4 text-center">{item.qty}</span>
-                      <button onClick={() => addToCart(item)} disabled={item.qty >= item.stock} className="w-8 h-8 rounded-lg bg-zinc-800 font-bold">+</button>
-                    </div>
-                 </div>
-               ))}
-               <div className="pt-6 border-t border-zinc-800">
-                   <div className="flex justify-between mb-4 px-2">
-                       <span className="font-bold text-zinc-500 uppercase text-xs">Итого</span>
-                       <span className="font-black text-xl text-white">{total} €</span>
-                   </div>
-                   <button 
-                    onClick={() => setView('checkout')}
-                    className="w-full py-5 rounded-2xl bg-orange-500 text-black font-black text-xl uppercase italic shadow-lg shadow-orange-500/20"
-                   >
-                       Оформить заказ
-                   </button>
-               </div>
-             </div>
-          ) : <div className="text-center py-24 opacity-20 font-black uppercase italic">Корзина пуста</div>}
-        </div>
-      )}
-
-      {view === 'checkout' && (
-        <div className="space-y-6 animate-in slide-in-from-right duration-300">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setView('cart')} className="w-10 h-10 rounded-xl bg-zinc-900 text-zinc-400 flex items-center justify-center">←</button>
-            <h2 className="text-2xl font-black uppercase italic">Оформление</h2>
-          </div>
-          <div className="bg-[#141417] p-6 rounded-3xl border border-zinc-800 space-y-4 shadow-xl">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-orange-500 uppercase px-1">Имя, фамилия</label>
-              <input 
-                className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl outline-none focus:border-orange-500 transition-colors text-sm" 
-                placeholder="" 
-                value={formData.name}
-                onChange={e => setFormData({...formData, name: e.target.value})}
-              />
-            </div>
-            
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-orange-500 uppercase px-1">Номер телефона</label>
-              <input 
-                className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl outline-none focus:border-orange-500 transition-colors text-sm" 
-                placeholder="" 
-                type="tel"
-                value={formData.phone}
-                onChange={e => setFormData({...formData, phone: e.target.value})}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-orange-500 uppercase px-1">Город</label>
-              <input 
-                className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl outline-none focus:border-orange-500 transition-colors text-sm" 
-                placeholder="" 
-                value={formData.city}
-                onChange={e => setFormData({...formData, city: e.target.value})}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-orange-500 uppercase px-1">Улица, номер дома</label>
-              <input 
-                className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl outline-none focus:border-orange-500 transition-colors text-sm" 
-                placeholder="" 
-                value={formData.street}
-                onChange={e => setFormData({...formData, street: e.target.value})}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-orange-500 uppercase px-1">Почтовый индекс</label>
-              <input 
-                className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl outline-none focus:border-orange-500 transition-colors text-sm" 
-                placeholder="" 
-                value={formData.zip}
-                onChange={e => setFormData({...formData, zip: e.target.value})}
-              />
-            </div>
-
-            <button 
-              onClick={submitOrder}
-              disabled={!formData.name || !formData.phone || !formData.city || !formData.street || !formData.zip}
-              className="w-full py-5 rounded-2xl bg-orange-500 text-black font-black text-xl uppercase italic disabled:opacity-30 mt-4 active:scale-95 transition-all shadow-lg shadow-orange-500/20"
-            >
-              Подтвердить — {total}€
-            </button>
-          </div>
-        </div>
-      )}
-
-      {view === 'success' && (
-        <div className="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center p-8 text-center animate-in zoom-in duration-300">
-          <div className="w-24 h-24 bg-orange-500 rounded-full flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(249,115,22,0.5)]">
-            <span className="text-5xl">🔥</span>
-          </div>
-          <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4 text-orange-500">Заказ принят!</h2>
-          <p className="text-zinc-400 text-sm mb-10 font-medium">Ваш заказ передан в облако. Мы свяжемся с вами в ближайшее время.</p>
-          <button onClick={() => setView('shop')} className="w-full py-5 rounded-2xl bg-zinc-900 text-white font-black text-xl uppercase italic">На главную</button>
-        </div>
-      )}
-
-      {view === 'admin' && isAdmin && (
-        <div className="space-y-8 animate-in slide-in-from-left duration-300">
-          <div className="flex items-center justify-between sticky top-16 bg-[#0a0a0b]/90 py-2 z-40">
-            <button onClick={() => setView('shop')} className="w-10 h-10 rounded-xl bg-zinc-900 text-zinc-400 font-bold flex items-center justify-center">←</button>
-            <h2 className="text-xl font-black uppercase italic">Админка</h2>
-          </div>
-
-          <section className="space-y-3">
-            <h3 className="text-[10px] font-black text-orange-500 uppercase px-1 tracking-widest">Заказы ({orders.length})</h3>
-            <div className="space-y-3">
-              {orders.map(o => (
-                <div key={o.id} className="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl space-y-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-black text-white text-sm">{o.customer?.name}</div>
-                      <div className="text-[10px] text-zinc-500">{o.customer?.phone}</div>
-                    </div>
-                    <div className="text-orange-500 font-black">{o.total}€</div>
-                  </div>
-                  <div className="text-[10px] text-zinc-400 bg-black/30 p-3 rounded-lg leading-relaxed">
-                    <span className="text-orange-500/50 font-black uppercase text-[8px] block mb-1">Адрес доставки:</span>
-                    {o.customer?.city}, {o.customer?.street} <br/>
-                    Индекс: {o.customer?.zip}
-                  </div>
-                  <div className="pt-2 border-t border-zinc-800">
-                    {o.items?.map((it, idx) => (
-                      <div key={idx} className="text-[10px] flex justify-between py-0.5">
-                        <span className="text-zinc-300">{it.flavor} x{it.qty}</span>
-                        <span className="text-zinc-500">{it.price * it.qty}€</span>
-                      </div>
-                    ))}
-                  </div>
-                  <button onClick={() => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', o.id))} className="w-full py-1.5 text-[8px] uppercase font-black text-red-500 border border-red-900/30 rounded-md mt-2 hover:bg-red-500/10">Удалить из базы</button>
+                    )}
                 </div>
-              ))}
-              {orders.length === 0 && <div className="text-center py-4 text-zinc-600 text-[10px] uppercase font-bold tracking-widest">Нет заказов</div>}
-            </div>
-          </section>
+            );
+        }
 
-          <section className="space-y-3">
-            <h3 className="text-[10px] font-black text-orange-500 uppercase px-1 tracking-widest">Категории</h3>
-            <div className="flex flex-wrap gap-2">
-              {categories.map(c => (
-                <div key={c} className="bg-zinc-900 px-3 py-2 rounded-xl border border-zinc-800 flex items-center gap-2 text-xs font-bold">
-                  {c} <button onClick={() => updateCategoriesList(categories.filter(x => x !== c))} className="text-red-500">✕</button>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input id="catIn" placeholder="" className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 flex-1 text-sm outline-none focus:border-orange-500" />
-              <button onClick={() => {
-                const val = document.getElementById('catIn').value;
-                if(val) { updateCategoriesList([...categories, val]); document.getElementById('catIn').value = ''; }
-              }} className="bg-zinc-800 px-5 rounded-xl font-bold">+</button>
-            </div>
-          </section>
-
-          <section className="space-y-4 pb-10">
-            <div className="flex justify-between items-center px-1">
-              <h3 className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Витрина</h3>
-              <button onClick={() => saveProduct({ id: Date.now(), flavor: "НОВЫЙ ТОВАР", price: 15, stock: 10, category: categories[0] || "Тропик", image: "", inStock: true })} className="text-[9px] font-black text-orange-500 hover:text-orange-400 transition-colors">+ ТОВАР</button>
-            </div>
-            {products.map(p => (
-              <div key={p.id} className="bg-[#141417] p-4 rounded-2xl border border-zinc-800 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <input className="bg-zinc-900 border border-zinc-800 p-2.5 rounded-lg text-xs outline-none focus:border-orange-500" value={p.flavor} onChange={e => saveProduct({...p, flavor: e.target.value})} placeholder="" />
-                  <select className="bg-zinc-900 border border-zinc-800 p-2.5 rounded-lg text-xs outline-none focus:border-orange-500" value={p.category} onChange={e => saveProduct({...p, category: e.target.value})}>
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <input className="bg-zinc-900 border border-zinc-800 p-2.5 rounded-lg text-[10px] w-full outline-none focus:border-orange-500" value={p.image} onChange={e => saveProduct({...p, image: e.target.value})} placeholder="" />
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="number" className="bg-zinc-900 border border-zinc-800 p-2.5 rounded-lg text-xs outline-none focus:border-orange-500" value={p.price} onChange={e => saveProduct({...p, price: Number(e.target.value)})} />
-                  <input type="number" className="bg-zinc-900 border border-zinc-800 p-2.5 rounded-lg text-xs outline-none focus:border-orange-500" value={p.stock} onChange={e => saveProduct({...p, stock: Number(e.target.value)})} />
-                </div>
-                <button onClick={() => deleteProduct(p.id)} className="w-full py-2 bg-red-950/20 text-red-500 border border-red-900/30 rounded-xl text-[9px] font-black uppercase">Удалить</button>
-              </div>
-            ))}
-          </section>
-        </div>
-      )}
-
-      {showPassModal && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
-          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-[32px] w-full max-w-[320px] text-center space-y-6">
-            <h3 className="font-black uppercase italic text-lg tracking-tighter">Доступ к базе</h3>
-            <input 
-              type="password" 
-              autoFocus
-              className="w-full bg-black border border-zinc-800 rounded-2xl p-4 text-center outline-none focus:border-orange-500 font-black tracking-widest" 
-              value={passInput}
-              onChange={e => setPassInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && checkPassword()}
-            />
-            <button onClick={checkPassword} className="w-full py-4 bg-orange-500 text-black font-black rounded-2xl uppercase italic active:scale-95 transition-all">Войти</button>
-            <button onClick={() => setShowPassModal(false)} className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest hover:text-zinc-400 transition-colors">Отмена</button>
-          </div>
-        </div>
-      )}
-
-      {view === 'shop' && total > 0 && (
-        <div className="fixed bottom-8 left-6 right-6 z-40 animate-in slide-in-from-bottom duration-300">
-          <button onClick={() => setView('cart')} className="w-full p-5 bg-orange-500 rounded-2xl flex justify-between items-center text-black shadow-2xl shadow-orange-500/40 active:scale-[0.98] transition-all">
-            <span className="font-black italic uppercase text-sm tracking-tighter">К заказу</span>
-            <span className="text-xl font-black">{total} €</span>
-          </button>
-        </div>
-      )}
-
-    </div>
-  );
-}
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
 
