@@ -3,85 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>FireLiQ | Premium Store</title>
     
-    <!-- Telegram WebApp SDK -->
+    <!-- PWA Meta Tags для установки на iPhone -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FireLiQ">
+    
+    <title>FireLiQ | Premium Store DE</title>
+    
+    <!-- SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Firebase SDK (Compat) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.1.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.1.0/firebase-auth-compat.js"></script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
 
     <style>
         :root { 
             --fire: #ff4d00; 
             --gold: #fbbf24; 
-            --dark: #0f0f0f; 
-            --error: #ef4444;
-            /* Учет безопасных зон Telegram */
-            --tg-safe-top: env(safe-area-inset-top);
-            --tg-safe-bottom: env(safe-area-inset-bottom);
+            --dark: #080808; 
+            --safe-top: env(safe-area-inset-top); 
+            --safe-bottom: env(safe-area-inset-bottom); 
         }
         
         body { 
             background: var(--dark); 
-            color: #ffffff; 
+            color: white; 
             font-family: 'Nunito', sans-serif; 
-            -webkit-tap-highlight-color: transparent;
-            padding-top: var(--tg-safe-top);
-            padding-bottom: var(--tg-safe-bottom);
-            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent; 
+            margin: 0; 
+            padding-top: var(--safe-top);
         }
-        
-        .fire-gradient { background: linear-gradient(135deg, var(--fire) 0%, var(--gold) 100%); }
-        .glass { background: rgba(18, 18, 18, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .active-tab { background: #ffcc00 !important; color: black !important; font-weight: 900; transform: scale(1.05); }
-        .hidden { display: none !important; }
-        
-        .btn-push { transition: all 0.1s; box-shadow: 0 4px 0px #993d00; }
-        .btn-push:active { transform: translateY(3px); box-shadow: 0 1px 0px #993d00; }
 
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .fire-gradient { background: linear-gradient(135deg, var(--fire) 0%, var(--gold) 100%); }
+        .glass { background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .active-tab { background: #ffcc00 !important; color: black !important; font-weight: 900; }
         
-        .input-flat {
-            background: #1e1e1e;
-            border: 2px solid rgba(255, 255, 255, 0.05);
-            border-radius: 1rem;
-            padding: 1rem;
-            outline: none;
-            width: 100%;
-            color: white;
-            font-weight: 700;
-            transition: border-color 0.2s;
+        .input-flat { 
+            background: #141414; 
+            border: 2px solid rgba(255,255,255,0.05); 
+            border-radius: 14px; 
+            padding: 16px; 
+            width: 100%; 
+            color: white; 
+            outline: none; 
+            font-size: 16px; /* Предотвращает зум на iPhone */
         }
         .input-flat:focus { border-color: var(--fire); }
-        .input-error { border-color: var(--error) !important; }
+        .input-error { border-color: #ef4444 !important; }
         
-        /* Фикс для iOS/Telegram чтобы контент не обрезался */
-        main { padding-bottom: calc(100px + var(--tg-safe-bottom)); }
+        #loading-screen { 
+            position: fixed; 
+            inset: 0; 
+            background: var(--dark); 
+            z-index: 9999; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .loader { width: 35px; height: 35px; border: 3px solid #141414; border-top-color: var(--fire); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        main { padding-bottom: calc(120px + var(--safe-bottom)); }
+        
+        /* Адаптация для больших экранов */
+        @media (min-width: 768px) {
+            main { max-width: 500px; margin: 0 auto; }
+            nav { max-width: 500px; margin: 0 auto; left: 50% !important; transform: translateX(-50%); border-radius: 0 0 20px 20px; }
+        }
     </style>
 </head>
 <body>
 
+    <div id="loading-screen">
+        <div class="loader mb-4"></div>
+        <div class="text-[10px] font-black uppercase tracking-widest text-zinc-600">FireLiQ Cloud Init...</div>
+    </div>
+
     <nav class="sticky top-0 z-50 glass p-4 flex justify-between items-center">
-        <div id="logo-trigger" class="flex items-center gap-2 cursor-pointer select-none">
+        <div id="logo-trigger" class="flex items-center gap-2 cursor-pointer">
             <span class="text-2xl">🔥</span>
-            <h1 class="text-2xl font-black italic tracking-tighter uppercase">
-                FIRE<span class="text-[#fbbf24]">LIQ</span>
-            </h1>
+            <h1 class="text-xl font-black italic uppercase tracking-tighter">FIRE<span class="text-[#fbbf24]">LIQ</span></h1>
         </div>
-        <div class="flex items-center gap-3">
-            <button onclick="window.showView('cart')" class="relative bg-[#1e1e1e] p-3 rounded-2xl border border-white/5 active:scale-95 transition-transform">
-                🛒 <span id="cart-count" class="hidden absolute -top-1 -right-1 bg-white text-black text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-black">0</span>
-            </button>
-        </div>
+        <button onclick="window.showView('cart')" class="relative bg-[#141414] p-3 rounded-2xl border border-white/5 active:scale-90 transition-transform">
+            🛒 <span id="cart-count" class="hidden absolute -top-1 -right-1 bg-white text-black text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full">0</span>
+        </button>
     </nav>
 
-    <div id="category-bar" class="p-4 flex gap-3 overflow-x-auto no-scrollbar"></div>
+    <div id="category-bar" class="p-4 flex gap-2 overflow-x-auto no-scrollbar"></div>
 
     <main class="p-4">
         <div id="shop-view" class="grid grid-cols-2 gap-3"></div>
@@ -90,147 +103,130 @@
         <div id="cart-view" class="hidden space-y-6">
             <div class="flex justify-between items-center">
                 <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Корзина</h2>
-                <button onclick="window.showView('shop')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">НАЗАД</button>
+                <button onclick="window.showView('shop')" class="text-[10px] font-black text-zinc-500 uppercase">Назад</button>
             </div>
-            <div id="cart-items" class="space-y-3"></div>
-            <div class="bg-[#1e1e1e] p-6 rounded-[2rem] border border-white/5">
-                <div class="flex justify-between items-center mb-6">
-                    <span class="text-zinc-500 font-bold uppercase text-[10px]">Итого:</span>
-                    <span id="total-price" class="text-2xl font-black text-white">0€</span>
-                </div>
-                <button onclick="window.showView('checkout')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push text-lg">Оформить</button>
+            <div id="cart-items" class="space-y-2"></div>
+            <div class="bg-[#141414] p-6 rounded-3xl border border-white/5 shadow-xl">
+                <div class="flex justify-between mb-4"><span class="text-zinc-500 uppercase text-xs font-bold">К оплате:</span><span id="total-price" class="text-2xl font-black">0€</span></div>
+                <button onclick="window.showView('checkout')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-2xl shadow-lg active:scale-95 transition-transform">Продолжить</button>
             </div>
         </div>
 
-        <!-- Доставка -->
+        <!-- Оформление (DE Standard) -->
         <div id="checkout-view" class="hidden space-y-4">
-            <div class="flex justify-between items-center mb-2">
-                <h2 class="text-2xl font-black italic text-[#ffcc00] uppercase">Данные</h2>
-                <button onclick="window.showView('cart')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">НАЗАД</button>
-            </div>
+            <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Адрес доставки</h2>
             <div class="space-y-3">
-                <input id="f-name" class="input-flat" placeholder="Firstname Lastname (Latin)">
-                <input id="f-tg" class="input-flat" placeholder="Telegram Username (@username)">
-                <div class="pt-2">
-                    <input id="f-street" class="input-flat mb-3" placeholder="Street and House Number">
+                <input id="f-name" class="input-flat" placeholder="Name Surname (Latin)">
+                <input id="f-tg" class="input-flat" placeholder="Telegram @username">
+                <div class="pt-2 space-y-3">
+                    <p class="text-[10px] text-zinc-500 font-bold uppercase ml-1">Данные для Германии</p>
+                    <input id="f-street" class="input-flat" placeholder="Street, House No.">
                     <div class="flex gap-2">
                         <input id="f-zip" class="input-flat w-1/3" placeholder="ZIP" type="number">
                         <input id="f-city" class="input-flat w-2/3" placeholder="City">
                     </div>
                 </div>
             </div>
-            <button onclick="window.validateAndNext()" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push mt-4">Далее</button>
+            <button onclick="window.validateAndNext()" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-2xl mt-4">Далее</button>
         </div>
 
         <!-- Инструкция -->
         <div id="instruction-view" class="hidden space-y-6">
             <h2 class="text-3xl font-black italic text-[#ffcc00] uppercase">Оплата</h2>
-            <div class="bg-[#1e1e1e] p-6 rounded-[2rem] border border-white/5 space-y-4">
-                <div class="flex gap-3"><span class="w-6 h-6 rounded-full bg-[#fbbf24] text-black text-[10px] flex items-center justify-center font-black">1</span><p class="text-sm">Скопируйте карту</p></div>
-                <div class="flex gap-3"><span class="w-6 h-6 rounded-full bg-[#fbbf24] text-black text-[10px] flex items-center justify-center font-black">2</span><p class="text-sm">Сделайте перевод в банке</p></div>
-                <div class="flex gap-3"><span class="w-6 h-6 rounded-full bg-[#fbbf24] text-black text-[10px] flex items-center justify-center font-black">3</span><p class="text-sm">Вернитесь и нажмите «Оплачено»</p></div>
+            <div class="bg-[#141414] p-6 rounded-3xl border border-white/5 space-y-6">
+                <div class="flex gap-4"><span class="w-6 h-6 bg-[#fbbf24] text-black rounded-full flex items-center justify-center font-black flex-shrink-0">1</span><p class="text-sm font-bold">Скопируйте номер карты</p></div>
+                <div class="flex gap-4"><span class="w-6 h-6 bg-[#fbbf24] text-black rounded-full flex items-center justify-center font-black flex-shrink-0">2</span><p class="text-sm font-bold">Сделайте перевод в своем банке</p></div>
+                <div class="flex gap-4"><span class="w-6 h-6 bg-[#fbbf24] text-black rounded-full flex items-center justify-center font-black flex-shrink-0">3</span><p class="text-sm font-bold">Нажмите кнопку «Я оплатил»</p></div>
             </div>
-            <button onclick="window.showView('payment')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push">К реквизитам</button>
+            <button onclick="window.showView('payment')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-2xl">Показать реквизиты</button>
         </div>
 
-        <!-- Экран оплаты -->
+        <!-- Реквизиты -->
         <div id="payment-view" class="hidden text-center space-y-6">
             <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic text-left">Реквизиты</h2>
-            <div class="bg-[#1e1e1e] p-8 rounded-[2rem] border border-white/5 shadow-2xl">
-                <p class="text-[10px] text-zinc-500 uppercase font-black mb-4">Номер карты:</p>
-                <div class="text-xl font-black text-white tracking-widest mb-6 select-all" id="display-card-num">....</div>
+            <div class="bg-[#141414] p-8 rounded-3xl border border-white/5 shadow-2xl">
+                <p class="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Перевод на карту (DE):</p>
+                <div class="text-lg font-black text-white tracking-widest mb-6 select-all p-4 bg-black/40 rounded-xl border border-white/5" id="display-card-num">....</div>
                 <div class="flex justify-between border-t border-white/5 pt-4">
                     <span class="text-zinc-500 font-bold uppercase text-xs">Сумма:</span>
-                    <span id="payment-total" class="font-black text-white text-xl">0€</span>
+                    <span id="payment-total" class="text-2xl font-black text-white">0€</span>
                 </div>
             </div>
-            <button onclick="window.sendOrder()" id="confirm-btn" class="w-full py-5 fire-gradient text-black font-black uppercase rounded-xl btn-push text-lg">Я оплатил</button>
+            <button onclick="window.sendOrder()" id="confirm-btn" class="w-full py-5 fire-gradient text-black font-black uppercase rounded-2xl shadow-xl active:scale-95 transition-all">Я оплатил</button>
         </div>
 
         <!-- Успех -->
-        <div id="success-view" class="hidden flex flex-col items-center justify-center text-center py-10">
-            <div class="w-20 h-20 bg-[#ffcc00] rounded-full flex items-center justify-center text-black text-4xl mb-6 shadow-xl">✓</div>
-            <h2 class="text-3xl font-black italic mb-2 text-[#ffcc00]">ОТПРАВЛЕНО</h2>
-            <p class="text-zinc-400 font-bold mb-10 text-sm">Ваш заказ <span id="order-num" class="text-white">#0</span> принят.</p>
-            <button onclick="window.Telegram.WebApp.close()" class="px-10 py-4 bg-white text-black rounded-xl font-black uppercase text-xs">Закрыть магазин</button>
+        <div id="success-view" class="hidden flex flex-col items-center justify-center text-center py-20 px-6">
+            <div class="w-20 h-20 bg-[#ffcc00] rounded-full flex items-center justify-center text-black text-4xl mb-6 shadow-[0_0_30px_rgba(255,204,0,0.3)]">✓</div>
+            <h2 class="text-3xl font-black italic mb-2 text-[#ffcc00]">ПРИНЯТО</h2>
+            <p class="text-zinc-500 text-sm font-bold mb-10">Заказ <span id="order-num" class="text-white">#0</span> успешно оформлен.</p>
+            <button onclick="location.reload()" class="px-10 py-4 bg-white text-black font-black rounded-xl uppercase text-xs">В начало</button>
         </div>
 
-        <!-- Админка -->
-        <div id="admin-view" class="hidden space-y-8 pb-20">
-            <div class="flex justify-between items-center bg-[#1e1e1e] p-4 rounded-2xl">
-                <h2 class="text-[#ffcc00] font-black uppercase text-xl italic">Админка</h2>
-                <button onclick="window.showView('shop')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg">ВЫХОД</button>
+        <!-- Админ -->
+        <div id="admin-view" class="hidden space-y-6 pb-20">
+            <div class="flex justify-between items-center"><h2 class="text-xl font-black text-[#ffcc00] italic">Админ-панель</h2><button onclick="window.showView('shop')" class="text-xs font-bold text-zinc-600">ВЫЙТИ</button></div>
+            
+            <div class="bg-[#141414] p-5 rounded-2xl space-y-4">
+                <input id="admin-card-input" class="input-flat text-xs" placeholder="Номер карты">
+                <button onclick="window.updateSettings()" class="w-full bg-white text-black py-3 rounded-xl font-black text-xs uppercase">Обновить карту</button>
             </div>
 
-            <div class="bg-[#1e1e1e] p-5 rounded-2xl space-y-3">
-                <input id="admin-card-input" class="input-flat text-sm text-center" placeholder="Номер карты">
-                <button onclick="window.updateSettings()" class="w-full bg-white text-black py-3 rounded-xl font-black text-[10px] uppercase">Обновить карту</button>
-            </div>
-
-            <div class="bg-[#1e1e1e] p-5 rounded-2xl space-y-4">
-                <p class="text-[10px] font-black text-zinc-500 uppercase text-center">Категории</p>
+            <div class="bg-[#141414] p-5 rounded-2xl space-y-4">
+                <p class="text-[10px] text-zinc-500 font-bold uppercase text-center">Категории</p>
                 <div class="flex gap-2">
-                    <input id="new-cat-name" class="input-flat text-sm" placeholder="Имя">
-                    <button onclick="window.addCategory()" class="bg-[#fbbf24] text-black px-5 rounded-xl font-black text-xl">+</button>
+                    <input id="new-cat-name" class="input-flat text-xs" placeholder="Название">
+                    <button onclick="window.addCategory()" class="bg-[#fbbf24] text-black px-4 rounded-xl font-black text-xl">+</button>
                 </div>
-                <div id="admin-categories-list" class="space-y-2"></div>
+                <div id="admin-categories-list" class="space-y-1"></div>
             </div>
 
-            <div class="bg-[#1e1e1e] p-5 rounded-2xl space-y-4">
-                <p class="text-[10px] font-black text-zinc-500 uppercase text-center">Новый товар</p>
-                <label class="block w-full h-32 border-2 border-dashed border-white/10 rounded-2xl flex items-center justify-center cursor-pointer bg-black/20 overflow-hidden relative">
+            <div class="bg-[#141414] p-5 rounded-2xl space-y-4">
+                <p class="text-[10px] text-zinc-500 font-bold uppercase text-center">Новый товар</p>
+                <label class="block w-full h-32 border-2 border-dashed border-white/5 rounded-2xl flex items-center justify-center cursor-pointer bg-black/20 overflow-hidden relative">
                     <input type="file" id="prod-image-input" accept="image/*" class="hidden" onchange="window.handleImageSelect(event)">
                     <img id="preview-img" class="absolute inset-0 w-full h-full object-cover hidden">
-                    <span id="placeholder-ui">📸</span>
+                    <span id="placeholder-ui" class="text-2xl opacity-10">📸</span>
                 </label>
-                <input id="prod-name" class="input-flat text-sm" placeholder="Название">
+                <input id="prod-name" class="input-flat text-xs" placeholder="Имя">
                 <div class="flex gap-2">
-                    <input id="prod-price" class="input-flat text-sm w-1/2" placeholder="Цена €">
-                    <input id="prod-stock" type="number" class="input-flat text-sm w-1/2" placeholder="Склад">
+                    <input id="prod-price" class="input-flat text-xs w-1/2" placeholder="Цена €"><input id="prod-stock" type="number" class="input-flat text-xs w-1/2" placeholder="Склад">
                 </div>
-                <select id="prod-cat" class="input-flat text-sm text-zinc-400 font-bold uppercase"></select>
-                <button onclick="window.addProduct()" id="add-prod-btn" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push">Добавить</button>
+                <select id="prod-cat" class="input-flat text-xs text-zinc-400 font-bold uppercase"></select>
+                <button onclick="window.addProduct()" id="add-prod-btn" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl">Опубликовать</button>
             </div>
-
-            <div id="admin-products-list" class="space-y-3"></div>
+            <div id="admin-products-list" class="space-y-2"></div>
         </div>
     </main>
 
-    <!-- Модалка пароля -->
-    <div id="auth-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-6">
-        <div class="bg-[#1e1e1e] p-10 rounded-[2rem] w-full max-w-xs space-y-6 text-center">
-            <span class="text-4xl">🔐</span>
-            <input id="adm-pass" type="password" class="w-full bg-black/50 p-4 rounded-xl text-center font-black outline-none tracking-[5px] text-xl text-white" placeholder="••••">
-            <button onclick="window.tryLogin()" class="w-full py-4 fire-gradient text-black rounded-xl font-black uppercase btn-push">Войти</button>
-            <button onclick="window.closeAuth()" class="text-zinc-500 font-bold text-[10px] uppercase">Закрыть</button>
+    <!-- Auth -->
+    <div id="auth-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/98 p-6">
+        <div class="w-full max-w-xs text-center space-y-6">
+            <span class="text-5xl">🔐</span>
+            <input id="adm-pass" type="password" class="w-full bg-[#141414] p-4 rounded-xl text-center font-black tracking-[5px] text-xl outline-none border border-white/5" placeholder="••••">
+            <button onclick="window.tryLogin()" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl">Войти</button>
+            <button onclick="window.closeAuth()" class="text-xs font-bold text-zinc-600 uppercase mt-4">Закрыть</button>
         </div>
     </div>
 
     <script>
-        // Инициализация Telegram WebApp
-        const tgApp = window.Telegram.WebApp;
-        tgApp.expand(); // Развернуть на весь экран
-        tgApp.ready(); // Сообщить, что приложение загружено
+        const tg = window.Telegram?.WebApp;
+        if (tg) { tg.expand(); tg.ready(); }
 
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const TG_BOT = { token: "8443611271:AAHQiXYvsOGI5FuoEB-Q0QTgdKleskhS1QQ", chatId: "8480602033" };
+        let db, auth, appId;
+        try {
+            const firebaseConfig = JSON.parse(__firebase_config);
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            auth = firebase.auth();
+            appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            
+            auth.signInAnonymously().then(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+            }).catch(e => { alert("Auth error. Please check your internet connection."); });
+        } catch (e) { alert("Firebase init failed."); }
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await auth.signInWithCustomToken(__initial_auth_token);
-            } else {
-                await auth.signInAnonymously();
-            }
-        };
-        initAuth().catch(console.error);
-
-        let products = [], categories = [], cart = [], settings = {cardNum: ''}, curCat = 'Все', clicks = 0;
-        let selectedImageBase64 = "";
+        let products = [], categories = [], cart = [], settings = {cardNum: ''}, curCat = 'Все', clicks = 0, selectedImageBase64 = "";
 
         const regexLatin = /^[a-zA-Z0-9\s\.,\-]+$/;
         const regexTg = /^@[a-zA-Z0-9_]{3,}$/;
@@ -239,13 +235,15 @@
         window.validateAndNext = () => {
             const n = document.getElementById('f-name'), t = document.getElementById('f-tg'), s = document.getElementById('f-street'), z = document.getElementById('f-zip'), c = document.getElementById('f-city');
             let ok = true;
-            [n,t,s,z,c].forEach(x => x.classList.remove('input-error'));
-            if(!regexLatin.test(n.value)) { n.classList.add('input-error'); ok = false; }
-            if(!regexTg.test(t.value)) { t.classList.add('input-error'); ok = false; }
-            if(!regexLatin.test(s.value)) { s.classList.add('input-error'); ok = false; }
-            if(!regexZip.test(z.value)) { z.classList.add('input-error'); ok = false; }
-            if(!regexLatin.test(c.value)) { c.classList.add('input-error'); ok = false; }
+            [n,t,s,z,c].forEach(el => el.classList.remove('input-error'));
+            if(!regexLatin.test(n.value.trim())) { n.classList.add('input-error'); ok = false; }
+            if(!regexTg.test(t.value.trim())) { t.classList.add('input-error'); ok = false; }
+            if(!regexLatin.test(s.value.trim())) { s.classList.add('input-error'); ok = false; }
+            if(!regexZip.test(z.value.trim())) { z.classList.add('input-error'); ok = false; }
+            if(!regexLatin.test(c.value.trim())) { c.classList.add('input-error'); ok = false; }
+            
             if(ok) window.showView('instruction');
+            else { if(tg) tg.HapticFeedback.notificationOccurred('error'); }
         };
 
         window.handleImageSelect = (e) => {
@@ -258,7 +256,7 @@
                     const W = 400; const scale = W / img.width;
                     canvas.width = W; canvas.height = img.height * scale;
                     canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                    selectedImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    selectedImageBase64 = canvas.toDataURL('image/jpeg', 0.6);
                     document.getElementById('preview-img').src = selectedImageBase64;
                     document.getElementById('preview-img').classList.remove('hidden');
                     document.getElementById('placeholder-ui').classList.add('hidden');
@@ -276,12 +274,10 @@
             document.getElementById('category-bar').classList.toggle('hidden', v !== 'shop');
             if(v==='payment') {
                 document.getElementById('payment-total').innerText = cart.reduce((a,b)=>a+(b.price*b.qty),0)+'€';
-                document.getElementById('display-card-num').innerText = settings.cardNum || 'Не указана';
+                document.getElementById('display-card-num').innerText = settings.cardNum || 'NOT SET';
             }
             window.scrollTo(0,0);
         };
-
-        window.setCat = (c) => { curCat = c; render(); };
 
         window.updateCartQty = (id, d) => {
             const i = cart.findIndex(c => c.id === id), p = products.find(x => x.id === id);
@@ -291,6 +287,7 @@
                 if(n > p.stock) return;
                 if(n <= 0) cart.splice(i, 1); else cart[i].qty = n;
             } else if(d > 0 && p.stock > 0) cart.push({...p, qty:1});
+            if(tg) tg.HapticFeedback.impactOccurred('light');
             updateUI();
         };
 
@@ -299,26 +296,17 @@
             const el = document.getElementById('cart-count');
             el.innerText = q; el.classList.toggle('hidden', q===0);
             document.getElementById('cart-items').innerHTML = cart.map(item => `
-                <div class="bg-[#1e1e1e] p-4 rounded-2xl flex justify-between items-center border border-white/5">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-lg bg-black/40 overflow-hidden">
-                            ${item.image ? `<img src="${item.image}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-xs">📦</div>`}
-                        </div>
-                        <div><p class="font-bold text-sm text-white uppercase">${item.name}</p><p class="text-[10px] text-[#fbbf24] font-bold">${item.price}€</p></div>
-                    </div>
-                    <div class="flex items-center gap-3 bg-black/40 rounded-lg p-1">
-                        <button onclick="window.updateCartQty('${item.id}',-1)" class="w-8 h-8 text-white font-bold">-</button>
-                        <span class="text-[#fbbf24] font-black text-sm">${item.qty}</span>
-                        <button onclick="window.updateCartQty('${item.id}',1)" class="w-8 h-8 text-white font-bold">+</button>
-                    </div>
+                <div class="bg-[#141414] p-4 rounded-2xl flex justify-between items-center border border-white/5 shadow-lg">
+                    <div class="flex items-center gap-3"><img src="${item.image}" class="w-12 h-12 rounded-xl object-cover"><div><p class="font-bold text-sm uppercase">${item.name}</p><p class="text-[10px] text-[#fbbf24] font-black">${item.price}€</p></div></div>
+                    <div class="flex items-center gap-3 bg-black rounded-xl p-1"><button onclick="window.updateCartQty('${item.id}',-1)" class="w-8 h-8 font-bold">-</button><span class="text-xs font-black min-w-[12px] text-center">${item.qty}</span><button onclick="window.updateCartQty('${item.id}',1)" class="w-8 h-8 font-bold">+</button></div>
                 </div>`).join('');
             document.getElementById('total-price').innerText = cart.reduce((a,b)=>a+(b.price*b.qty),0)+'€';
-            if(!document.getElementById('shop-view').classList.contains('hidden')) renderShop();
+            renderShop();
         }
 
         window.sendOrder = async () => {
             const b = document.getElementById('confirm-btn');
-            b.disabled = true; b.innerText = "ОБРАБОТКА...";
+            b.disabled = true; b.innerText = "...";
             try {
                 const batch = db.batch();
                 for (const item of cart) {
@@ -329,47 +317,33 @@
 
                 const oid = Math.floor(Math.random()*9000)+1000;
                 const total = cart.reduce((a,b)=>a+(b.price*b.qty),0);
-                const text = `🔥 *ЗАКАЗ №${oid}*\n\n👤 ${document.getElementById('f-name').value}\n✈️ ${document.getElementById('f-tg').value}\n📍 ${document.getElementById('f-street').value}, ${document.getElementById('f-zip').value} ${document.getElementById('f-city').value}\n\n📦 Товары:\n${cart.map(i=>`• ${i.name} (x${i.qty})`).join('\n')}\n\n💰 Итого: *${total}€*`;
+                const info = `👤 ${document.getElementById('f-name').value}\n✈️ ${document.getElementById('f-tg').value}\n📍 ${document.getElementById('f-street').value}, ${document.getElementById('f-zip').value} ${document.getElementById('f-city').value}\nGERMANY 🇩🇪`;
+                const text = `🔥 *ЗАКАЗ №${oid}*\n\n${info}\n\n📦 Товары:\n${cart.map(i=>`• ${i.name} (x${i.qty})`).join('\n')}\n\n💰 Итого: *${total}€*`;
                 
-                await fetch(`https://api.telegram.org/bot${TG_BOT.token}/sendMessage`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({chat_id:TG_BOT.chatId, text, parse_mode:'Markdown'}) });
+                const BOT_TOKEN = "8443611271:AAHQiXYvsOGI5FuoEB-Q0QTgdKleskhS1QQ";
+                const CHAT_ID = "8480602033";
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({chat_id:CHAT_ID, text, parse_mode:'Markdown'}) });
                 
                 document.getElementById('order-num').innerText = oid;
                 window.showView('success'); cart = []; updateUI();
-                tgApp.HapticFeedback.notificationOccurred('success');
-            } catch (e) { alert("Ошибка сохранения."); }
+                if(tg) tg.HapticFeedback.notificationOccurred('success');
+            } catch (e) { alert("Error sending order."); }
             b.disabled = false; b.innerText = "Я оплатил";
         };
 
-        window.updateSettings = async () => {
-            await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('settings').doc('general').set({ cardNum: document.getElementById('admin-card-input').value });
-            alert("Карта обновлена!");
-        };
-
-        window.addCategory = async () => {
-            let el = document.getElementById('new-cat-name');
-            if(el.value.trim()) { 
-                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('categories').add({ name: el.value.trim().toUpperCase(), createdAt: new Date() }); 
-                el.value = ''; 
-            }
-        };
-
-        window.delCategory = async (id) => { if(confirm("Удалить?")) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('categories').doc(id).delete(); };
-
+        window.updateSettings = async () => { await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('settings').doc('general').set({ cardNum: document.getElementById('admin-card-input').value }); alert("Saved"); };
+        window.addCategory = async () => { let el = document.getElementById('new-cat-name'); if(el.value.trim()) { await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('categories').add({ name: el.value.trim().toUpperCase(), createdAt: new Date() }); el.value = ''; } };
+        window.delCategory = async (id) => { if(confirm("DEL?")) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('categories').doc(id).delete(); };
         window.addProduct = async () => {
             const n = document.getElementById('prod-name').value, p = document.getElementById('prod-price').value, s = document.getElementById('prod-stock').value, c = document.getElementById('prod-cat').value;
-            if(!n || !p) return;
-            try {
-                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('products').add({ 
-                    name: n, price: Number(p), stock: Number(s)||0, category: c, image: selectedImageBase64, createdAt: new Date() 
-                });
-                ['prod-name','prod-price','prod-stock'].forEach(id => document.getElementById(id).value = '');
-                document.getElementById('preview-img').classList.add('hidden');
-                document.getElementById('placeholder-ui').classList.remove('hidden');
-                selectedImageBase64 = "";
-            } catch (e) { alert("Ошибка."); }
+            if(!n || !p || !selectedImageBase64) return alert("All fields required");
+            await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('products').add({ name: n, price: Number(p), stock: Number(s)||0, category: c, image: selectedImageBase64, createdAt: new Date() });
+            ['prod-name','prod-price','prod-stock'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('preview-img').classList.add('hidden');
+            document.getElementById('placeholder-ui').classList.remove('hidden');
+            selectedImageBase64 = "";
         };
-
-        window.delProduct = async (id) => { if(confirm("Удалить?")) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('products').doc(id).delete(); };
+        window.delProduct = async (id) => { if(confirm("DEL?")) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('products').doc(id).delete(); };
         window.updateStock = async (id, v) => { await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('products').doc(id).update({ stock: Number(v) }); };
 
         window.tryLogin = () => { if(document.getElementById('adm-pass').value === 'danil2409') { window.closeAuth(); window.showView('admin'); } };
@@ -381,18 +355,18 @@
             const f = (curCat === 'Все' ? products : products.filter(p => p.category === curCat)).filter(p => p.stock > 0);
             grid.innerHTML = f.map(p => {
                 const i = cart.find(x => x.id === p.id), q = i ? i.qty : 0;
-                let btn = q > 0 ? `<div class="flex items-center bg-[#141414] rounded-xl w-full justify-between px-1 h-10 border border-white/10"><button onclick="window.updateCartQty('${p.id}',-1)" class="text-white w-8 h-full font-black">-</button><span class="text-[#fbbf24] font-black text-sm">${q}</span><button onclick="window.updateCartQty('${p.id}',1)" class="text-white w-8 h-full font-black" ${q>=p.stock?'disabled opacity-30':''}>+</button></div>` : 
-                `<button onclick="window.updateCartQty('${p.id}',1)" class="w-10 h-10 fire-gradient text-black rounded-xl font-black text-xl shadow-lg">+</button>`;
-                return `<div class="bg-[#1a1a1a] p-3 rounded-3xl border border-white/5 flex flex-col relative overflow-hidden"><div class="aspect-square bg-[#252525] rounded-2xl mb-3 overflow-hidden shadow-inner">${p.image ? `<img src="${p.image}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center">📦</div>`}</div><h3 class="text-[11px] font-bold uppercase h-8 line-clamp-2 leading-tight mb-1">${p.name}</h3><p class="text-[9px] text-zinc-500 font-bold mb-3 uppercase italic">Stock: ${p.stock}</p><div class="mt-auto flex justify-between items-center gap-2"><span class="text-lg font-black text-white">${p.price}€</span><div class="flex justify-end min-w-[70px]">${btn}</div></div></div>`;
+                let btn = q > 0 ? `<div class="flex items-center bg-[#0a0a0a] rounded-xl w-full justify-between px-1 h-9 border border-white/5"><button onclick="window.updateCartQty('${p.id}',-1)" class="text-white w-7 h-full font-bold">-</button><span class="text-[#fbbf24] font-black text-xs">${q}</span><button onclick="window.updateCartQty('${p.id}',1)" class="text-white w-7 h-full font-bold" ${q>=p.stock?'disabled opacity-20':''}>+</button></div>` : 
+                `<button onclick="window.updateCartQty('${p.id}',1)" class="w-9 h-9 fire-gradient text-black rounded-xl font-black text-lg shadow-lg">+</button>`;
+                return `<div class="bg-[#141414] p-3 rounded-2xl border border-white/5 flex flex-col relative shadow-md"><div class="aspect-square bg-black rounded-xl mb-3 overflow-hidden shadow-inner">${p.image ? `<img src="${p.image}" class="w-full h-full object-cover">` : `<div class="flex h-full items-center justify-center">📦</div>`}</div><h3 class="text-[10px] font-bold uppercase h-7 line-clamp-2 leading-tight text-zinc-100">${p.name}</h3><div class="mt-auto flex justify-between items-center gap-2 pt-2"><span class="text-sm font-black text-white">${p.price}€</span><div class="flex justify-end min-w-[65px]">${btn}</div></div></div>`;
             }).join('');
         }
 
         function render() {
             const bar = document.getElementById('category-bar');
-            if(bar) bar.innerHTML = `<button onclick="window.setCat('Все')" class="px-5 py-2.5 rounded-xl bg-[#1a1a1a] text-[10px] font-black uppercase border border-white/5 ${curCat==='Все'?'active-tab':''}">Все 🔥</button>` + categories.map(c => `<button onclick="window.setCat('${c.name}')" class="px-5 py-2.5 rounded-xl bg-[#1a1a1a] text-[10px] font-black uppercase border border-white/5 ${curCat===c.name?'active-tab':''}">${c.name}</button>`).join('');
+            if(bar) bar.innerHTML = `<button onclick="window.setCat('Все')" class="px-4 py-2 rounded-xl bg-[#141414] text-[10px] font-black uppercase border border-white/5 ${curCat==='Все'?'active-tab':''}">Все 🔥</button>` + categories.map(c => `<button onclick="window.setCat('${c.name}')" class="px-4 py-2 rounded-xl bg-[#141414] text-[10px] font-black uppercase border border-white/5 ${curCat===c.name?'active-tab':''}">${c.name}</button>`).join('');
             renderShop();
-            if(document.getElementById('admin-categories-list')) document.getElementById('admin-categories-list').innerHTML = categories.map(c => `<div class="flex gap-2 bg-black/40 p-2 rounded-xl border border-white/5 items-center"><input value="${c.name}" readonly class="flex-grow bg-transparent text-sm font-bold uppercase text-white px-2"><button onclick="window.delCategory('${c.id}')" class="text-red-500 font-black text-[9px] px-2 py-2 bg-red-500/10 rounded-lg">DEL</button></div>`).join('');
-            if(document.getElementById('admin-products-list')) document.getElementById('admin-products-list').innerHTML = products.map(p => `<div class="bg-black/40 p-3 rounded-2xl border border-white/5 flex justify-between items-center"><div class="flex items-center gap-3 w-2/3"><img src="${p.image}" class="w-8 h-8 rounded object-cover"><p class="text-[10px] font-bold uppercase text-white truncate">${p.name}</p></div><div class="flex items-center gap-2"><input type="number" value="${p.stock}" onchange="window.updateStock('${p.id}', this.value)" class="w-10 bg-black/50 text-center rounded text-xs py-1 font-bold text-white"><button onclick="window.delProduct('${p.id}')" class="text-red-500 font-black px-2 py-1 bg-red-500/10 rounded text-[9px]">УД</button></div></div>`).join('');
+            if(document.getElementById('admin-categories-list')) document.getElementById('admin-categories-list').innerHTML = categories.map(c => `<div class="flex gap-2 bg-black/40 p-2 rounded-xl items-center"><span class="flex-grow text-[10px] font-bold text-white uppercase ml-2">${c.name}</span><button onclick="window.delCategory('${c.id}')" class="text-red-500 font-black text-[9px] px-2 py-1 bg-red-500/10 rounded">DEL</button></div>`).join('');
+            if(document.getElementById('admin-products-list')) document.getElementById('admin-products-list').innerHTML = products.map(p => `<div class="bg-black/40 p-2 rounded-xl border border-white/5 flex justify-between items-center"><div class="flex items-center gap-2 w-2/3"><img src="${p.image}" class="w-7 h-7 rounded object-cover"><p class="text-[9px] font-bold uppercase text-white truncate">${p.name}</p></div><div class="flex items-center gap-2"><input type="number" value="${p.stock}" onchange="window.updateStock('${p.id}', this.value)" class="w-8 bg-black/50 text-center rounded text-[9px] py-1 font-bold text-white"><button onclick="window.delProduct('${p.id}')" class="text-red-500 px-2 py-1 bg-red-500/10 rounded">УД</button></div></div>`).join('');
             const sel = document.getElementById('prod-cat'); if(sel) sel.innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
             if(document.getElementById('admin-card-input')) document.getElementById('admin-card-input').value = settings.cardNum || '';
         }
