@@ -4,46 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FireLiQ Store</title>
+    <!-- Подключаем Tailwind напрямую -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0a0a0b; 
+            color: white;
+            margin: 0;
+        }
+        /* Стильный лоадер на случай задержки JS */
+        #fallback-loader {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0a0a0b;
+            z-index: 9999;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(249, 115, 22, 0.1);
+            border-top-color: #f97316;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="fallback-loader">
+        <div class="spinner"></div>
+        <p style="color: #f97316; font-size: 10px; font-weight: 900; margin-top: 15px; letter-spacing: 2px; text-transform: uppercase; font-style: italic;">FireLiQ Cloud</p>
+    </div>
+
+    <div id="root"></div>
+
+    <!-- Библиотеки -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .glass { background: rgba(20, 20, 23, 0.8); backdrop-filter: blur(12px); }
-    </style>
-</head>
-<body class="bg-[#0a0a0b] text-zinc-100 overflow-x-hidden">
-    <div id="root"></div>
 
-    <script type="module" typeof="babel">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, doc, onSnapshot, addDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    <script type="text/babel">
+        // Импортируем Firebase модули через динамический импорт для стабильности в Preview
+        const initFirebase = async () => {
+            const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
+            const { getFirestore, collection, doc, onSnapshot, addDoc, serverTimestamp, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+            const { getAuth, signInAnonymously, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
 
-        // Твоя конфигурация из скриншотов
-        const firebaseConfig = {
-            apiKey: "AIzaSyAb8gtyyzMqxEOiK9f9lOWN7stwAbLzakc",
-            authDomain: "fireliq-15259.firebaseapp.com",
-            projectId: "fireliq-15259",
-            storageBucket: "fireliq-15259.firebasestorage.app",
-            messagingSenderId: "752537372890",
-            appId: "1:752537372890:web:1afa9447329ea31ec57de3"
+            const firebaseConfig = {
+                apiKey: "AIzaSyAb8gtyyzMqxEOiK9f9lOWN7stwAbLzakc",
+                authDomain: "fireliq-15259.firebaseapp.com",
+                projectId: "fireliq-15259",
+                storageBucket: "fireliq-15259.firebasestorage.app",
+                messagingSenderId: "752537372890",
+                appId: "1:752537372890:web:1afa9447329ea31ec57de3"
+            };
+
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
+
+            return { db, auth, collection, doc, onSnapshot, addDoc, serverTimestamp, deleteDoc, signInAnonymously, onAuthStateChanged };
         };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        const ADMIN_PASSWORD = "danil2409";
-        const TELEGRAM_BOT_TOKEN = "8443611271:AAHQiXYvsOGI5FuoEB-Q0QTgdKleskhS1QQ";
-        const TELEGRAM_CHAT_ID = "8480602033";
 
         const { useState, useEffect } = React;
 
         function App() {
+            const [fb, setFb] = useState(null);
             const [user, setUser] = useState(null);
             const [view, setView] = useState('shop');
             const [isAdmin, setIsAdmin] = useState(false);
@@ -56,30 +88,35 @@
             const [passInput, setPassInput] = useState('');
             const [formData, setFormData] = useState({ name: '', phone: '', city: '', street: '' });
 
+            const ADMIN_PASSWORD = "danil2409";
+            const TELEGRAM_BOT_TOKEN = "8443611271:AAHQiXYvsOGI5FuoEB-Q0QTgdKleskhS1QQ";
+            const TELEGRAM_CHAT_ID = "8480602033";
+
             useEffect(() => {
-                signInAnonymously(auth).catch(console.error);
-                return onAuthStateChanged(auth, setUser);
+                initFirebase().then(services => {
+                    setFb(services);
+                    services.signInAnonymously(services.auth);
+                    services.onAuthStateChanged(services.auth, (u) => {
+                        setUser(u);
+                        document.getElementById('fallback-loader').style.display = 'none';
+                    });
+                });
             }, []);
 
             useEffect(() => {
-                if (!user) return;
+                if (!user || !fb) return;
                 
-                // Живое обновление товаров
-                const pUnsub = onSnapshot(collection(db, 'products'), s => {
+                const pUnsub = fb.onSnapshot(fb.collection(fb.db, 'products'), s => {
                     setProducts(s.docs.map(d => ({ id: d.id, ...d.data() })));
-                    setLoading(false);
-                }, (err) => {
-                    console.error("Firestore Error:", err);
                     setLoading(false);
                 });
 
-                // Живое обновление заказов
-                const oUnsub = onSnapshot(collection(db, 'orders'), s => {
+                const oUnsub = fb.onSnapshot(fb.collection(fb.db, 'orders'), s => {
                     setOrders(s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
                 });
 
                 return () => { pUnsub(); oUnsub(); };
-            }, [user]);
+            }, [user, fb]);
 
             const sendTG = async (data, total) => {
                 const list = data.items.map(i => `🔹 ${i.flavor} x${i.qty}`).join('\n');
@@ -90,218 +127,139 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg })
                     });
-                } catch(e) { console.error("TG Error:", e); }
+                } catch(e) { console.error(e); }
             };
 
             const submitOrder = async () => {
-                if (!formData.name || !formData.phone) return alert("Пожалуйста, заполните Имя и Телефон");
+                if (!formData.name || !formData.phone) return alert("Заполни данные!");
                 const items = Object.values(cart).map(i => ({ flavor: i.flavor, qty: i.qty, price: i.price }));
                 const total = items.reduce((s, i) => s + (Number(i.price) * i.qty), 0);
-                const orderData = { customer: formData, items, total, createdAt: serverTimestamp() };
                 
                 try {
-                    await addDoc(collection(db, 'orders'), orderData);
-                    await sendTG(orderData, total);
+                    await fb.addDoc(fb.collection(fb.db, 'orders'), { 
+                        customer: formData, items, total, createdAt: fb.serverTimestamp() 
+                    });
+                    await sendTG({ customer: formData, items }, total);
                     setCart({});
                     setView('success');
-                } catch(e) { 
-                    alert("Ошибка базы данных! Убедись, что нажал 'Publish' во вкладке Rules в Firebase."); 
-                }
+                } catch(e) { alert("Ошибка сохранения!"); }
             };
 
             const totalAmount = Object.values(cart).reduce((s, i) => s + (Number(i.price) * i.qty), 0);
 
-            if (loading) return (
-                <div className="h-screen flex flex-col items-center justify-center bg-black">
-                    <div className="w-12 h-12 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="mt-4 text-orange-500 font-black italic uppercase tracking-widest text-[10px]">FireLiQ Cloud Loading</p>
-                </div>
-            );
+            if (!user) return null;
 
             return (
-                <div className="max-w-md mx-auto min-h-screen bg-[#0a0a0b] flex flex-col">
+                <div className="max-w-md mx-auto min-h-screen bg-[#0a0a0b] flex flex-col text-white font-sans">
                     {/* Header */}
-                    <header className="sticky top-0 z-[60] glass border-b border-white/5 p-5 flex justify-between items-center">
-                        <h1 className="text-2xl font-[900] italic uppercase tracking-tighter cursor-pointer select-none active:scale-95 transition-transform" 
-                            onClick={() => {
-                                setClickCount(prev => prev + 1);
-                                if(clickCount + 1 >= 10) { setShowPassModal(true); setClickCount(0); }
-                            }}>
-                            FireLiQ<span className="text-orange-500">.</span>
-                        </h1>
-                        <div className="flex items-center gap-3">
-                            {isAdmin && (
-                                <button onClick={() => setView('admin')} className="p-2 bg-zinc-900 rounded-xl border border-orange-500/30 text-orange-500">
-                                    ⚙️
-                                </button>
-                            )}
-                            <button onClick={() => setView('cart')} className="relative p-2 bg-zinc-900 rounded-xl border border-white/10">
-                                🛒
-                                {totalAmount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 text-black text-[10px] font-bold rounded-full flex items-center justify-center">!</span>}
-                            </button>
+                    <header className="sticky top-0 z-50 bg-[#0a0a0b]/80 backdrop-blur-lg border-b border-white/5 p-4 flex justify-between items-center">
+                        <h1 className="text-2xl font-black italic uppercase tracking-tighter" onClick={() => {
+                            setClickCount(c => c + 1);
+                            if(clickCount + 1 >= 10) { setShowPassModal(true); setClickCount(0); }
+                        }}>FireLiQ<span className="text-orange-500">.</span></h1>
+                        <div className="flex gap-2">
+                            {isAdmin && <button onClick={() => setView('admin')} className="p-2 bg-zinc-900 rounded-xl text-orange-500 border border-orange-500/20">⚙️</button>}
+                            <button onClick={() => setView('cart')} className="p-2 bg-zinc-900 rounded-xl border border-white/5">🛒</button>
                         </div>
                     </header>
 
-                    {/* Views */}
-                    <main className="flex-grow p-4">
+                    {/* Content */}
+                    <main className="p-4 flex-grow">
                         {view === 'shop' && (
-                            <div className="grid grid-cols-2 gap-4 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="grid grid-cols-2 gap-4 pb-24">
                                 {products.map(p => (
-                                    <div key={p.id} className="bg-[#141417] border border-white/5 rounded-[2rem] p-4 flex flex-col gap-3 shadow-xl">
-                                        <div className="aspect-square bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[1.5rem] flex items-center justify-center text-5xl font-black italic text-orange-500/10 select-none">
-                                            FL
-                                        </div>
+                                    <div key={p.id} className="bg-zinc-900/50 border border-white/5 rounded-[2rem] p-4 space-y-3">
+                                        <div className="aspect-square bg-zinc-800 rounded-3xl flex items-center justify-center text-4xl font-black italic text-white/5">FL</div>
                                         <div>
-                                            <p className="text-[10px] font-black uppercase text-zinc-500 tracking-wider truncate">{p.flavor}</p>
+                                            <p className="text-[10px] font-black uppercase text-zinc-500 truncate">{p.flavor}</p>
                                             <div className="flex justify-between items-center mt-1">
-                                                <span className="text-xl font-black">{p.price}€</span>
-                                                <button 
-                                                    onClick={() => setCart({...cart, [p.id]: { ...p, qty: (cart[p.id]?.qty || 0) + 1 }})}
-                                                    className="w-10 h-10 bg-orange-500 text-black rounded-xl font-black flex items-center justify-center active:scale-90 transition-transform shadow-lg shadow-orange-500/20">
-                                                    +
-                                                </button>
+                                                <span className="text-lg font-black">{p.price}€</span>
+                                                <button onClick={() => setCart({...cart, [p.id]: { ...p, qty: (cart[p.id]?.qty || 0) + 1 }})} className="w-10 h-10 bg-orange-500 text-black rounded-xl font-black shadow-lg shadow-orange-500/20">+</button>
                                             </div>
                                         </div>
                                     </div>
                                 ))}
-                                {products.length === 0 && (
-                                    <div className="col-span-2 text-center py-20 opacity-20 italic">
-                                        <p>Товары загружаются или отсутствуют...</p>
-                                    </div>
-                                )}
                             </div>
                         )}
 
                         {view === 'cart' && (
-                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                                <div className="flex items-center gap-4">
-                                    <button onClick={() => setView('shop')} className="p-2 bg-zinc-900 rounded-lg text-zinc-500">←</button>
-                                    <h2 className="text-2xl font-black uppercase italic">Ваша корзина</h2>
-                                </div>
-                                <div className="space-y-3">
-                                    {Object.values(cart).map(item => (
-                                        <div key={item.id} className="bg-zinc-900/50 p-4 rounded-3xl border border-white/5 flex justify-between items-center">
-                                            <div>
-                                                <p className="font-black uppercase text-xs">{item.flavor}</p>
-                                                <p className="text-orange-500 font-bold text-xs">{item.qty} шт. x {item.price}€</p>
-                                            </div>
-                                            <button onClick={() => { const n = {...cart}; delete n[item.id]; setCart(n); }} className="text-red-500/50 font-bold p-2">✕</button>
-                                        </div>
-                                    ))}
-                                    {totalAmount === 0 && <p className="text-center py-10 opacity-30 italic">В корзине пусто</p>}
-                                </div>
-                                {totalAmount > 0 && (
-                                    <button onClick={() => setView('checkout')} className="w-full py-5 bg-orange-500 text-black font-black uppercase italic rounded-[2rem] shadow-xl shadow-orange-500/10">
-                                        Перейти к оформлению
-                                    </button>
-                                )}
+                            <div className="space-y-4">
+                                <button onClick={() => setView('shop')} className="text-xs font-bold text-zinc-500 uppercase">← Назад</button>
+                                <h2 className="text-2xl font-black uppercase italic">Корзина</h2>
+                                {Object.values(cart).map(i => (
+                                    <div key={i.id} className="bg-zinc-900 p-4 rounded-2xl flex justify-between items-center">
+                                        <p className="text-xs font-black uppercase">{i.flavor} x{i.qty}</p>
+                                        <button onClick={() => { const n = {...cart}; delete n[i.id]; setCart(n); }} className="text-red-500">✕</button>
+                                    </div>
+                                ))}
+                                {totalAmount > 0 ? (
+                                    <button onClick={() => setView('checkout')} className="w-full py-5 bg-orange-500 text-black font-black uppercase italic rounded-2xl">К оформлению — {totalAmount}€</button>
+                                ) : <p className="text-center py-20 opacity-20 italic">Пусто</p>}
                             </div>
                         )}
 
                         {view === 'checkout' && (
-                            <div className="space-y-6">
-                                <h2 className="text-2xl font-black uppercase italic text-orange-500">Данные доставки</h2>
-                                <div className="space-y-3">
-                                    {['name', 'phone', 'city', 'street'].map(field => (
-                                        <input 
-                                            key={field}
-                                            className="w-full bg-zinc-900/50 border border-white/10 p-5 rounded-3xl outline-none focus:border-orange-500 transition-colors text-sm" 
-                                            placeholder={field === 'name' ? 'ВАШЕ ИМЯ' : field === 'phone' ? 'НОМЕР ТЕЛЕФОНА' : field === 'city' ? 'ГОРОД' : 'УЛИЦА / ДОМ / КВ'} 
-                                            onChange={e => setFormData({...formData, [field]: e.target.value})}
-                                        />
-                                    ))}
-                                </div>
-                                <button onClick={submitOrder} className="w-full py-6 bg-orange-500 text-black font-black uppercase italic rounded-[2.5rem] shadow-2xl">
-                                    Подтвердить заказ — {totalAmount}€
-                                </button>
+                            <div className="space-y-4">
+                                <h2 className="text-2xl font-black italic uppercase text-orange-500">Доставка</h2>
+                                {['name', 'phone', 'city', 'street'].map(f => (
+                                    <input key={f} className="w-full bg-zinc-900 border border-white/10 p-4 rounded-2xl outline-none focus:border-orange-500" placeholder={f.toUpperCase()} onChange={e => setFormData({...formData, [f]: e.target.value})} />
+                                ))}
+                                <button onClick={submitOrder} className="w-full py-5 bg-orange-500 text-black font-black rounded-2xl uppercase italic">Заказать</button>
                             </div>
                         )}
 
                         {view === 'admin' && (
-                            <div className="space-y-8 pb-20">
+                            <div className="space-y-6">
                                 <div className="flex justify-between items-center">
-                                    <h2 className="text-xl font-black uppercase italic text-orange-500 tracking-tighter">Панель Данила</h2>
-                                    <button onClick={() => setView('shop')} className="text-[10px] font-black opacity-30 uppercase underline">Выйти</button>
+                                    <h2 className="font-black italic text-orange-500 uppercase">Админка</h2>
+                                    <button onClick={() => setView('shop')} className="text-[10px] text-zinc-500">Выход</button>
                                 </div>
-                                
-                                <div className="bg-zinc-900 p-6 rounded-[2.5rem] border border-orange-500/20">
-                                    <p className="text-[10px] font-black uppercase text-zinc-500 mb-4 text-center tracking-[0.2em]">Новый товар</p>
-                                    <button onClick={() => {
-                                        const flavor = prompt("Название (вкус)?");
-                                        const price = prompt("Цена в €?", "15");
-                                        if(flavor && price) addDoc(collection(db, 'products'), { flavor, price: Number(price), createdAt: serverTimestamp() });
-                                    }} className="w-full py-4 border-2 border-dashed border-orange-500/30 text-orange-500 font-black rounded-2xl hover:bg-orange-500/5">
-                                        + В ОБЛАКО
-                                    </button>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <p className="text-[10px] font-black uppercase text-zinc-500">Список заказов:</p>
+                                <button onClick={() => {
+                                    const flavor = prompt("Вкус?");
+                                    const price = prompt("Цена?", "15");
+                                    if(flavor) fb.addDoc(fb.collection(fb.db, 'products'), { flavor, price: Number(price), createdAt: fb.serverTimestamp() });
+                                }} className="w-full py-4 border-2 border-dashed border-orange-500/30 text-orange-500 font-black rounded-2xl">+ ДОБАВИТЬ ТОВАР</button>
+                                <div className="space-y-3">
                                     {orders.map(o => (
-                                        <div key={o.id} className="bg-zinc-900/30 p-5 rounded-[2rem] border border-white/5 text-[11px] space-y-3 relative group">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="font-black text-white text-sm uppercase">{o.customer?.name}</p>
-                                                    <p className="text-orange-500 font-bold">{o.customer?.phone}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="font-black text-lg">{o.total}€</p>
-                                                    <p className="text-[9px] text-zinc-500 uppercase">{o.customer?.city}</p>
-                                                </div>
+                                        <div key={o.id} className="bg-zinc-900 p-4 rounded-2xl text-[10px] space-y-2">
+                                            <div className="flex justify-between font-black uppercase">
+                                                <span>{o.customer?.name}</span>
+                                                <span className="text-orange-500">{o.total}€</span>
                                             </div>
-                                            <div className="bg-black/50 p-3 rounded-2xl space-y-1">
-                                                {o.items?.map((it, idx) => (
-                                                    <p key={idx} className="text-zinc-400">🔥 {it.flavor} <span className="text-zinc-600">x{it.qty}</span></p>
-                                                ))}
-                                            </div>
-                                            <button 
-                                                onClick={() => { if(confirm("Удалить выполненный заказ?")) deleteDoc(doc(db, 'orders', o.id)) }}
-                                                className="w-full py-2 bg-red-500/10 text-red-500 font-black uppercase text-[9px] rounded-xl border border-red-500/20">
-                                                Выполнено / Удалить
-                                            </button>
+                                            <p className="text-zinc-500">{o.customer?.phone} | {o.customer?.city}</p>
+                                            <button onClick={() => fb.deleteDoc(fb.doc(fb.db, 'orders', o.id))} className="text-red-500 uppercase font-black">Удалить</button>
                                         </div>
                                     ))}
-                                    {orders.length === 0 && <p className="text-center py-10 opacity-20 text-xs italic">Заказов пока нет...</p>}
                                 </div>
                             </div>
                         )}
 
                         {view === 'success' && (
-                            <div className="flex-grow flex flex-col items-center justify-center text-center p-10 space-y-6 animate-in zoom-in duration-500">
-                                <div className="w-24 h-24 bg-orange-500 rounded-full flex items-center justify-center text-5xl shadow-2xl shadow-orange-500/40">✅</div>
-                                <h2 className="text-4xl font-black italic uppercase tracking-tighter">Успешно!</h2>
-                                <p className="text-zinc-500 text-sm">Ваш заказ принят в облако и отправлен менеджеру в Telegram. Скоро с вами свяжутся!</p>
-                                <button onClick={() => setView('shop')} className="w-full py-5 bg-zinc-900 rounded-[2rem] font-black uppercase italic text-xs border border-white/5">Вернуться в магазин</button>
+                            <div className="text-center py-24 space-y-6">
+                                <div className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center text-4xl mx-auto shadow-2xl">✅</div>
+                                <h2 className="text-3xl font-black uppercase italic">Заказ принят!</h2>
+                                <button onClick={() => setView('shop')} className="px-8 py-3 bg-zinc-900 rounded-xl text-xs font-bold">В МАГАЗИН</button>
                             </div>
                         )}
                     </main>
 
-                    {/* Navbar Cart Button */}
+                    {/* Navbar */}
                     {view === 'shop' && totalAmount > 0 && (
-                        <div className="fixed bottom-8 left-6 right-6 z-50 animate-in slide-in-from-bottom-10">
-                            <button onClick={() => setView('cart')} className="w-full bg-orange-500 p-6 rounded-[2.5rem] flex justify-between items-center text-black font-black uppercase italic shadow-2xl shadow-orange-500/50 active:scale-95 transition-transform">
-                                <span className="tracking-tight">Просмотр корзины</span>
-                                <span className="bg-black/10 px-4 py-1 rounded-full text-xl">{totalAmount}€</span>
+                        <div className="fixed bottom-6 left-6 right-6">
+                            <button onClick={() => setView('cart')} className="w-full bg-orange-500 p-5 rounded-[2rem] flex justify-between items-center text-black font-black uppercase italic shadow-2xl shadow-orange-500/40 active:scale-95 transition-transform">
+                                <span>Корзина</span>
+                                <span className="bg-black/10 px-4 py-1 rounded-full">{totalAmount}€</span>
                             </button>
                         </div>
                     )}
 
-                    {/* Password Modal */}
+                    {/* Pass Modal */}
                     {showPassModal && (
-                        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-6 z-[200] backdrop-blur-md">
-                            <div className="bg-[#141417] p-8 rounded-[3rem] w-full max-w-xs space-y-6 text-center border border-white/10 shadow-2xl">
-                                <p className="font-black uppercase italic text-xs tracking-[0.3em] text-orange-500">Админ Доступ</p>
-                                <input 
-                                    type="password" 
-                                    value={passInput} 
-                                    onChange={e => setPassInput(e.target.value)} 
-                                    className="w-full bg-black border border-white/10 p-5 rounded-[1.5rem] text-center font-bold tracking-[0.5em] outline-none focus:border-orange-500" 
-                                    autoFocus 
-                                />
-                                <div className="flex gap-2">
-                                    <button onClick={() => setShowPassModal(false)} className="flex-1 py-4 bg-zinc-800 text-zinc-500 font-black rounded-2xl uppercase text-[10px]">Назад</button>
-                                    <button onClick={() => { if(passInput === ADMIN_PASSWORD) { setIsAdmin(true); setShowPassModal(false); setView('admin'); } else { setPassInput(''); alert("Неверный пароль!"); } }} className="flex-[2] py-4 bg-orange-500 text-black font-black rounded-2xl uppercase text-[10px]">Войти</button>
-                                </div>
+                        <div className="fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100] backdrop-blur-md">
+                            <div className="bg-zinc-900 p-8 rounded-[3rem] w-full max-w-xs space-y-6 text-center border border-white/10">
+                                <p className="font-black uppercase italic text-xs text-orange-500">Пароль</p>
+                                <input type="password" value={passInput} onChange={e => setPassInput(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-2xl text-center font-bold tracking-[0.5em] outline-none focus:border-orange-500" autoFocus />
+                                <button onClick={() => { if(passInput === ADMIN_PASSWORD) { setIsAdmin(true); setShowPassModal(false); setView('admin'); } else { setPassInput(''); alert("Нет"); } }} className="w-full py-4 bg-orange-500 text-black font-black rounded-2xl uppercase">Войти</button>
                             </div>
                         </div>
                     )}
