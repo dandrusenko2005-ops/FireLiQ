@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>FireLiQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Telegram WebApp -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+    }
+
+    header {
+      background: #1a1a1a;
+      padding: 16px;
+      text-align: center;
+      font-size: 26px;
+      font-weight: bold;
+      color: orange;
+      letter-spacing: 2px;
+    }
+
+    .container {
+      padding: 16px;
+    }
+
+    .product {
+      background: #1b1b1b;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 2px solid #ff7a00;
+    }
+
+    .product h3 {
+      margin: 0 0 8px;
+      color: orange;
+    }
+
+    .product p {
+      margin: 4px 0;
+      font-size: 14px;
+      color: #ccc;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, #ff7a00, #ffae00);
+      font-size: 16px;
+      font-weight: bold;
+      color: #000;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    .form {
+      margin-top: 24px;
+      background: #1b1b1b;
+      padding: 16px;
+      border-radius: 16px;
+      border: 2px solid orange;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      border: none;
+      background: #000;
+      color: #fff;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>🔥 FireLiQ</header>
+
+<div class="container">
+
+  <div class="product">
+    <h3>Blueberry Ice</h3>
+    <p>Цена: 10€</p>
+    <button onclick="addToCart('Blueberry Ice', 10)">Добавить</button>
+  </div>
+
+  <div class="product">
+    <h3>Mango Peach</h3>
+    <p>Цена: 12€</p>
+    <button onclick="addToCart('Mango Peach', 12)">Добавить</button>
+  </div>
+
+  <div class="product">
+    <h3>Cola Lime</h3>
+    <p>Цена: 9€</p>
+    <button onclick="addToCart('Cola Lime', 9)">Добавить</button>
+  </div>
+
+  <div class="form">
+    <h3>📦 Заказ</h3>
+
+    <input id="city" placeholder="Город (Германия)">
+    <input id="street" placeholder="Улица">
+    <input id="zip" placeholder="PLZ">
+    <input id="phone" placeholder="Телефон">
+
+    <button onclick="sendOrder()">Отправить заказ</button>
+  </div>
+
+</div>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.expand();
+
+  let cart = [];
+  let total = 0;
+
+  function addToCart(name, price) {
+    cart.push(name + ' - ' + price + '€');
+    total += price;
+    tg.HapticFeedback.impactOccurred('light');
+    alert('Добавлено в заказ');
+  }
+
+  function sendOrder() {
+    const city = document.getElementById('city').value;
+    const street = document.getElementById('street').value;
+    const zip = document.getElementById('zip').value;
+    const phone = document.getElementById('phone').value;
+
+    if (!city || !street || !zip || !phone || cart.length === 0) {
+      tg.HapticFeedback.notificationOccurred('error');
+      alert('Заполни всё и добавь товар');
+      return;
+    }
+
+    const message =
+      "🔥 НОВЫЙ ЗАКАЗ FireLiQ\n\n" +
+      "📍 Город: " + city + "\n" +
+      "🏠 Улица: " + street + "\n" +
+      "📮 PLZ: " + zip + "\n" +
+      "📞 Телефон: " + phone + "\n\n" +
+      "🧃 Товары:\n" + cart.join("\n") + "\n\n" +
+      "💰 Итого: " + total + "€";
+
+    tg.sendData(message);
+    alert('Заказ отправлен!');
+    cart = [];
+    total = 0;
+  }
+</script>
+
+</body>
+</html>
