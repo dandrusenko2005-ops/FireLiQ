@@ -6,7 +6,7 @@
     <title>FireLiQ | Premium Store</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Firebase SDK (Compat - Самая стабильная версия) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -43,8 +43,24 @@
             font-weight: 700;
         }
         .input-flat:focus { border-color: var(--fire); }
+
+        /* Стиль для выбора цвета */
+        .color-picker {
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            cursor: pointer;
+            background: none;
+        }
+        .color-wrapper {
+            width: 100%;
+            height: 52px;
+            overflow: hidden;
+            border-radius: 12px;
+            border: 2px solid rgba(255,255,255,0.05);
+        }
         
-        /* Анимация галочки */
         .check-anim {
             width: 80px; height: 80px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
@@ -57,7 +73,6 @@
 </head>
 <body>
 
-    <!-- Header -->
     <nav class="sticky top-0 z-50 glass p-4 flex justify-between items-center">
         <div id="logo-trigger" class="flex items-center gap-2 cursor-pointer select-none">
             <span class="text-2xl">🔥</span>
@@ -70,42 +85,47 @@
         </button>
     </nav>
 
-    <!-- Categories -->
     <div id="category-bar" class="p-4 flex gap-3 overflow-x-auto no-scrollbar"></div>
 
     <main class="p-4 pb-32">
-        <!-- Shop -->
         <div id="shop-view" class="grid grid-cols-2 gap-3"></div>
 
-        <!-- Cart -->
+        <!-- Корзина -->
         <div id="cart-view" class="hidden space-y-6">
-            <h2 class="text-3xl font-black italic text-[#ffcc00]">Корзина</h2>
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Корзина</h2>
+                <button onclick="window.showView('shop')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg uppercase">Назад</button>
+            </div>
             <div id="cart-items" class="space-y-3"></div>
             <div class="bg-[#1e1e1e] p-6 rounded-[2rem] border border-white/5">
                 <div class="flex justify-between items-center mb-6">
-                    <span class="text-zinc-500 font-bold uppercase text-[10px] tracking-widest">К оплате:</span>
+                    <span class="text-zinc-500 font-bold uppercase text-[10px]">Итого</span>
                     <span id="total-price" class="text-2xl font-black text-white">0€</span>
                 </div>
                 <button onclick="window.showView('checkout')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push text-lg">Оформить</button>
             </div>
-            <button onclick="window.showView('shop')" class="w-full text-zinc-500 font-bold text-sm uppercase py-2">← Вернуться</button>
         </div>
 
-        <!-- Checkout -->
+        <!-- Доставка -->
         <div id="checkout-view" class="hidden space-y-4">
-            <h2 class="text-3xl font-black italic text-[#ffcc00]">Доставка</h2>
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Доставка</h2>
+                <button onclick="window.showView('cart')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg uppercase">Назад</button>
+            </div>
             <input id="f-name" class="input-flat" placeholder="Ваше Имя">
             <input id="f-phone" class="input-flat" placeholder="Телефон">
-            <input id="f-addr" class="input-flat" placeholder="Город, Улица, Дом, Индекс">
+            <input id="f-addr" class="input-flat" placeholder="Адрес доставки">
             <button onclick="window.showView('payment')" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push mt-2">К оплате</button>
-            <button onclick="window.showView('cart')" class="w-full text-zinc-500 font-bold text-xs uppercase">Назад</button>
         </div>
 
-        <!-- Payment -->
+        <!-- Оплата -->
         <div id="payment-view" class="hidden text-center space-y-6">
-            <h2 class="text-3xl font-black italic text-[#ffcc00]">Оплата</h2>
+            <div class="flex justify-between items-center text-left">
+                <h2 class="text-2xl font-black text-[#fbbf24] uppercase italic">Оплата</h2>
+                <button onclick="window.showView('checkout')" class="text-[10px] font-black text-zinc-500 border border-white/10 px-3 py-1 rounded-lg uppercase">Назад</button>
+            </div>
             <div class="bg-[#1e1e1e] p-8 rounded-[2rem] border border-white/5 shadow-2xl">
-                <p class="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Перевод на карту:</p>
+                <p class="text-[10px] text-zinc-500 uppercase font-black mb-4">Перевод на карту:</p>
                 <div class="text-xl font-black text-white tracking-widest mb-6 select-all" id="display-card-num">....</div>
                 <div class="flex justify-between border-t border-white/5 pt-4">
                     <span class="text-zinc-500 font-bold uppercase text-xs">Сумма:</span>
@@ -113,18 +133,17 @@
                 </div>
             </div>
             <button onclick="window.sendOrder()" id="confirm-btn" class="w-full py-5 fire-gradient text-black font-black uppercase rounded-xl btn-push text-lg">Я оплатил</button>
-            <button onclick="window.showView('checkout')" class="text-zinc-500 font-bold text-xs uppercase">Назад</button>
         </div>
 
-        <!-- Success -->
+        <!-- Успех -->
         <div id="success-view" class="hidden flex flex-col items-center justify-center text-center py-20 px-6">
-            <div class="check-anim">✓</div>
+            <div class="check-anim">✅</div>
             <h2 class="text-3xl font-black italic mb-2 text-[#ffcc00]">ПРИНЯТО!</h2>
             <p class="text-zinc-400 font-bold mb-10 text-sm">Ваш заказ <span id="order-num" class="text-white">#0</span> в обработке.</p>
-            <button onclick="window.showView('shop')" class="px-10 py-4 bg-white text-black rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-transform">В магазин</button>
+            <button onclick="window.showView('shop')" class="px-10 py-4 bg-white text-black rounded-xl font-black uppercase text-xs tracking-widest shadow-lg">В магазин</button>
         </div>
 
-        <!-- Admin -->
+        <!-- Админка -->
         <div id="admin-view" class="hidden space-y-8 pb-20">
             <div class="flex justify-between items-center bg-[#1e1e1e] p-4 rounded-2xl">
                 <h2 class="text-[#ffcc00] font-black uppercase text-xl italic">Панель управления</h2>
@@ -132,17 +151,17 @@
             </div>
 
             <!-- Реквизиты -->
-            <div class="bg-[#1e1e1e] p-5 rounded-2xl space-y-3">
-                <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Реквизиты карты</p>
+            <div class="bg-[#1a1a1a] p-5 rounded-2xl space-y-3">
+                <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Реквизиты карты</p>
                 <div class="flex gap-2">
-                    <input id="admin-card-input" class="input-flat text-sm" placeholder="Номер карты">
+                    <input id="admin-card-input" class="input-flat text-sm text-center" placeholder="Номер карты">
                     <button onclick="window.updateSettings()" class="bg-white text-black px-5 rounded-xl font-black text-[10px] uppercase">ОК</button>
                 </div>
             </div>
 
             <!-- Категории -->
-            <div class="bg-[#1e1e1e] p-5 rounded-2xl space-y-4">
-                <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Классификации</p>
+            <div class="bg-[#1a1a1a] p-5 rounded-2xl space-y-4">
+                <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Классификации</p>
                 <div class="flex gap-2">
                     <input id="new-cat-name" class="input-flat text-sm" placeholder="Название (напр. Ягоды)">
                     <button onclick="window.addCategory()" class="bg-[#fbbf24] text-black px-5 rounded-xl font-black text-xl">+</button>
@@ -151,12 +170,18 @@
             </div>
 
             <!-- Товары -->
-            <div class="bg-[#1e1e1e] p-5 rounded-2xl space-y-4">
-                <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Новый товар</p>
-                <input id="prod-name" class="input-flat text-sm" placeholder="Название товара">
+            <div class="bg-[#1a1a1a] p-5 rounded-2xl space-y-4">
+                <p class="text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">Новый товар</p>
+                <div class="flex gap-2">
+                    <input id="prod-emoji" class="input-flat text-sm w-1/4 text-center" placeholder="🍒🍒">
+                    <div class="w-1/4 color-wrapper">
+                        <input id="prod-bg" type="color" class="color-picker" value="#1a1a1a">
+                    </div>
+                    <input id="prod-name" class="input-flat text-sm w-2/4" placeholder="Название">
+                </div>
                 <div class="flex gap-2">
                     <input id="prod-price" class="input-flat text-sm w-1/2" placeholder="Цена €">
-                    <input id="prod-stock" type="number" class="input-flat text-sm w-1/2" placeholder="Склад">
+                    <input id="prod-stock" type="number" class="input-flat text-sm w-1/2" placeholder="Кол-во">
                 </div>
                 <select id="prod-cat" class="input-flat text-sm text-zinc-400 font-bold uppercase"></select>
                 <button onclick="window.addProduct()" class="w-full py-4 fire-gradient text-black font-black uppercase rounded-xl btn-push">Опубликовать</button>
@@ -166,7 +191,7 @@
         </div>
     </main>
 
-    <!-- Auth -->
+    <!-- Авторизация -->
     <div id="auth-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-6 backdrop-blur-sm">
         <div class="bg-[#1e1e1e] p-10 rounded-[2rem] w-full max-w-xs space-y-6 text-center border border-white/10 shadow-2xl">
             <span class="text-4xl">🔐</span>
@@ -177,7 +202,6 @@
     </div>
 
     <script>
-        // === ВСТАВЬ СВОЙ API KEY ЗДЕСЬ ===
         const firebaseConfig = {
             apiKey: "AIzaSyAb8gtyyzMqxEOiK9f9lOWN7stwAbLzakc",
             authDomain: "fireliq-15259.firebaseapp.com",
@@ -191,19 +215,16 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
-
         auth.signInAnonymously().catch(console.error);
 
         let products = [], categories = [], cart = [], settings = {cardNum: ''}, curCat = 'Все', clicks = 0;
 
-        // --- NAVIGATION ---
         window.showView = (view) => {
             ['shop', 'cart', 'checkout', 'admin', 'success', 'payment'].forEach(v => {
                 document.getElementById(v + '-view').classList.add('hidden');
             });
             document.getElementById(view + '-view').classList.remove('hidden');
             document.getElementById('category-bar').classList.toggle('hidden', view !== 'shop');
-            
             if (view === 'payment') {
                 const total = cart.reduce((a, b) => a + (Number(b.price) * b.qty), 0);
                 document.getElementById('payment-total').innerText = total + '€';
@@ -214,29 +235,17 @@
 
         window.setCat = (c) => { curCat = c; render(); };
 
-        // --- CART LOGIC ---
         window.updateCartQty = (id, delta) => {
             const pIndex = cart.findIndex(c => c.id === id);
-            
+            const prodInDb = products.find(prod => prod.id === id);
+            if (!prodInDb) return;
             if (pIndex > -1) {
-                const p = cart[pIndex];
-                const newQty = p.qty + delta;
-                
-                // Проверка склада
-                const prodInDb = products.find(prod => prod.id === id);
-                if (!prodInDb) return;
-
-                if (newQty > prodInDb.stock) return; // Не больше склада
-                if (newQty <= 0) {
-                    cart.splice(pIndex, 1);
-                } else {
-                    cart[pIndex].qty = newQty;
-                }
-            } else if (delta > 0) {
-                const p = products.find(x => x.id === id);
-                if (p && p.stock > 0) {
-                    cart.push({ ...p, qty: 1 });
-                }
+                const newQty = cart[pIndex].qty + delta;
+                if (newQty > prodInDb.stock) return;
+                if (newQty <= 0) cart.splice(pIndex, 1);
+                else cart[pIndex].qty = newQty;
+            } else if (delta > 0 && prodInDb.stock > 0) {
+                cart.push({ ...prodInDb, qty: 1 });
             }
             updateUI();
         };
@@ -248,92 +257,49 @@
             const countEl = document.getElementById('cart-count');
             countEl.innerText = totalQty;
             countEl.classList.toggle('hidden', totalQty === 0);
-
-            // Корзина
             const list = document.getElementById('cart-items');
             list.innerHTML = cart.map(item => `
                 <div class="bg-[#1e1e1e] p-4 rounded-2xl flex justify-between items-center border border-white/5">
-                    <div>
-                        <p class="text-[8px] text-[#fbbf24] font-black uppercase mb-1">${item.category}</p>
-                        <p class="font-bold text-sm text-white uppercase">${item.name}</p>
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">${item.emoji || '📦'}</span>
+                        <div>
+                            <p class="text-[8px] text-[#fbbf24] font-black uppercase mb-0.5">${item.category}</p>
+                            <p class="font-bold text-sm text-white uppercase">${item.name}</p>
+                        </div>
                     </div>
                     <div class="flex items-center gap-3 bg-black/40 rounded-lg p-1">
                         <button onclick="window.updateCartQty('${item.id}', -1)" class="w-8 h-8 text-white font-bold">-</button>
                         <span class="text-[#fbbf24] font-black text-sm">${item.qty}</span>
                         <button onclick="window.updateCartQty('${item.id}', 1)" class="w-8 h-8 text-white font-bold">+</button>
                     </div>
-                </div>
-            `).join('');
-            
+                </div>`).join('');
             document.getElementById('total-price').innerText = cart.reduce((a, b) => a + (Number(b.price) * b.qty), 0) + '€';
-            
-            if (!document.getElementById('shop-view').classList.contains('hidden')) {
-                renderShop();
-            }
+            if (!document.getElementById('shop-view').classList.contains('hidden')) renderShop();
         }
 
-        // --- ORDER LOGIC ---
         window.sendOrder = async () => {
             const btn = document.getElementById('confirm-btn');
-            const n = document.getElementById('f-name').value;
-            const ph = document.getElementById('f-phone').value;
-            const addr = document.getElementById('f-addr').value;
-
-            if(!n || !ph || !addr) return alert("Заполните все данные!");
-            
-            btn.disabled = true; 
-            btn.innerText = "ОБРАБОТКА...";
-            
+            const n = document.getElementById('f-name').value, ph = document.getElementById('f-phone').value, addr = document.getElementById('f-addr').value;
+            if(!n || !ph || !addr) return alert("Заполните данные!");
+            btn.disabled = true; btn.innerText = "ОБРАБОТКА...";
             try {
-                // ПРОВЕРКА И СПИСАНИЕ СО СКЛАДА
                 const batch = db.batch();
-                
-                // 1. Проверяем остатки
                 for (const item of cart) {
                     const ref = db.collection('products').doc(item.id);
-                    // Важно: в реальном приложении нужна транзакция, но для простоты используем batch update
-                    // Здесь мы используем .doc() вместо .document() - это было ошибкой
-                    batch.update(ref, { 
-                        stock: firebase.firestore.FieldValue.increment(-item.qty) 
-                    });
+                    batch.update(ref, { stock: firebase.firestore.FieldValue.increment(-item.qty) });
                 }
-                
                 await batch.commit();
-
-                // 2. Отправка в ТГ
                 const orderID = Math.floor(Math.random()*9000)+1000;
                 const total = cart.reduce((a,b)=>a+(Number(b.price)*b.qty),0);
-                const text = `🔥 *ЗАКАЗ №${orderID}*\n\n👤 Имя: ${n}\n📞 Тел: ${ph}\n📍 Адрес: ${addr}\n\n📦 Товары:\n${cart.map(i=>`• ${i.name} (${i.qty} шт.)`).join('\n')}\n\n💰 Итого: *${total}€*`;
-                
-                await fetch(`https://api.telegram.org/bot${TG.token}/sendMessage`, {
-                    method:'POST', headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({chat_id:TG.chatId, text, parse_mode:'Markdown'})
-                });
-                
-                // 3. Сохранение заказа
-                await db.collection('orders').add({
-                    customer: { name: n, phone: ph, address: addr },
-                    items: cart,
-                    total: total,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: 'paid'
-                });
-
+                const text = `🔥 *ЗАКАЗ №${orderID}*\n👤 Имя: ${n}\n📞 Тел: ${ph}\n📍 Адрес: ${addr}\n📦 Товары:\n${cart.map(i=>`${i.emoji||'📦'} ${i.name} (${i.qty} шт.)`).join('\n')}\n💰 Итого: *${total}€*`;
+                await fetch(`https://api.telegram.org/bot${TG.token}/sendMessage`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({chat_id:TG.chatId, text, parse_mode:'Markdown'}) });
                 document.getElementById('order-num').innerText = orderID;
                 window.showView('success');
-                cart = []; 
-                updateUI();
-                
-            } catch (e) {
-                console.error(e);
-                alert("Ошибка! " + e.message);
-            }
-            
-            btn.disabled = false; 
-            btn.innerText = "Я оплатил";
+                cart = []; updateUI();
+            } catch (e) { alert("Ошибка!"); }
+            btn.disabled = false; btn.innerText = "Я оплатил";
         };
 
-        // --- ADMIN LOGIC ---
         window.updateSettings = async () => {
             const val = document.getElementById('admin-card-input').value;
             await db.collection('settings').doc('general').set({ cardNum: val });
@@ -346,102 +312,91 @@
         window.updateCategory = async (id) => {
             const name = document.getElementById(`cat-input-${id}`).value;
             await db.collection('categories').doc(id).update({ name });
-            alert("Сохранено");
         };
         window.delCategory = async (id) => { if(confirm("Удалить?")) await db.collection('categories').doc(id).delete(); };
-
         window.addProduct = async () => {
-            const n = document.getElementById('prod-name').value, p = document.getElementById('prod-price').value, s = document.getElementById('prod-stock').value, c = document.getElementById('prod-cat').value;
+            const n = document.getElementById('prod-name').value, p = document.getElementById('prod-price').value,
+                  s = document.getElementById('prod-stock').value, c = document.getElementById('prod-cat').value,
+                  e = document.getElementById('prod-emoji').value, bg = document.getElementById('prod-bg').value;
             if(n && p) {
-                await db.collection('products').add({ name: n, price: Number(p), stock: Number(s)||0, category: c, createdAt: new Date() });
-                ['prod-name','prod-price','prod-stock'].forEach(id => document.getElementById(id).value = '');
+                await db.collection('products').add({ 
+                    name: n, price: Number(p), stock: Number(s)||0, category: c, 
+                    emoji: e || '📦', bgColor: bg || '#1a1a1a', createdAt: new Date() 
+                });
+                ['prod-name','prod-price','prod-stock','prod-emoji'].forEach(id => document.getElementById(id).value = '');
             }
         };
         window.updateStock = async (id, v) => { await db.collection('products').doc(id).update({ stock: Number(v) }); };
         window.delProduct = async (id) => { if(confirm("Удалить?")) await db.collection('products').doc(id).delete(); };
 
-        // --- AUTH ---
-        window.tryLogin = () => { if(document.getElementById('adm-pass').value === 'danil2409') { window.closeAuth(); window.showView('admin'); } else alert("Ошибка"); };
+        window.tryLogin = () => { if(document.getElementById('adm-pass').value === 'danil2409') { window.closeAuth(); window.showView('admin'); } };
         window.closeAuth = () => document.getElementById('auth-modal').classList.add('hidden');
         document.getElementById('logo-trigger').onclick = () => { clicks++; if(clicks>=5){ document.getElementById('auth-modal').classList.remove('hidden'); clicks=0; } setTimeout(()=>clicks=0, 2000); };
 
-        // --- RENDER ---
         function renderShop() {
             const grid = document.getElementById('shop-view');
             if(!grid) return;
             const filtered = (curCat === 'Все' ? products : products.filter(p => p.category === curCat)).filter(p => p.stock > 0);
-            
             grid.innerHTML = filtered.map(p => {
                 const inCartItem = cart.find(c => c.id === p.id);
                 const qty = inCartItem ? inCartItem.qty : 0;
-                
-                let btnHTML;
-                if(qty > 0) {
-                    btnHTML = `
+                let btnHTML = qty > 0 ? `
                     <div class="flex items-center bg-[#141414] rounded-xl w-full justify-between px-1 h-10 border border-white/10">
                         <button onclick="window.updateCartQty('${p.id}', -1)" class="text-white w-8 h-full font-black text-lg">-</button>
                         <span class="text-[#fbbf24] font-black text-sm">${qty}</span>
                         <button onclick="window.updateCartQty('${p.id}', 1)" class="text-white w-8 h-full font-black text-lg" ${qty >= p.stock ? 'disabled style="opacity:0.3"' : ''}>+</button>
-                    </div>`;
-                } else {
-                    btnHTML = `<button onclick="window.addToCart('${p.id}')" class="w-10 h-10 fire-gradient text-black rounded-xl font-black text-xl btn-push shadow-lg shadow-orange-500/20">+</button>`;
-                }
+                    </div>` : 
+                    `<button onclick="window.addToCart('${p.id}')" class="w-10 h-10 fire-gradient text-black rounded-xl font-black text-xl btn-push shadow-lg shadow-orange-500/20">+</button>`;
 
                 return `
-                <div class="bg-[#1a1a1a] p-4 rounded-3xl border border-white/5 flex flex-col relative overflow-hidden">
+                <div class="bg-[#1a1a1a] p-4 rounded-3xl border border-white/5 flex flex-col relative overflow-hidden shadow-lg">
                     <span class="absolute top-3 right-3 text-[7px] font-black text-[#fbbf24] opacity-50 uppercase">${p.category}</span>
-                    <div class="aspect-square bg-black/40 rounded-2xl mb-3 flex items-center justify-center text-xl grayscale opacity-10 italic">FL</div>
-                    <h3 class="text-[12px] font-black uppercase h-8 line-clamp-2 leading-tight mb-1 text-white">${p.name}</h3>
-                    <p class="text-[9px] text-zinc-400 font-bold mb-3 uppercase italic">В наличии: ${p.stock} шт</p>
+                    <div class="aspect-square rounded-2xl mb-3 flex flex-row items-center justify-center overflow-hidden p-1 shadow-inner" style="background-color: ${p.bgColor || 'rgba(0,0,0,0.4)'}">
+                        <span class="text-4xl leading-none text-center whitespace-nowrap tracking-tighter">
+                            ${p.emoji || '📦'}
+                        </span>
+                    </div>
+                    <h3 class="text-[12px] font-bold uppercase h-8 line-clamp-2 leading-tight mb-1 text-white">${p.name}</h3>
+                    <p class="text-[9px] text-zinc-400 font-bold mb-3 uppercase italic text-white/60">Остаток: ${p.stock}</p>
                     <div class="mt-auto flex justify-between items-center gap-2">
                         <span class="text-lg font-black text-white whitespace-nowrap">${p.price}€</span>
                         <div class="flex justify-end min-w-[80px]">${btnHTML}</div>
                     </div>
                 </div>`;
             }).join('');
+            if(filtered.length === 0) grid.innerHTML = `<div class="col-span-2 text-center py-20 text-zinc-600 font-bold uppercase text-xs">Нет товаров</div>`;
         }
 
         function render() {
-            // Категории
             const bar = document.getElementById('category-bar');
             if(bar) {
                 let h = `<button onclick="window.setCat('Все')" class="px-5 py-2.5 rounded-xl bg-[#1a1a1a] text-[10px] font-black uppercase whitespace-nowrap border border-white/5 ${curCat==='Все'?'active-tab':''}">Все 🔥</button>`;
-                categories.forEach(c => {
-                    h += `<button onclick="window.setCat('${c.name}')" class="px-5 py-2.5 rounded-xl bg-[#1a1a1a] text-[10px] font-black uppercase whitespace-nowrap border border-white/5 ${curCat===c.name?'active-tab':''}">${c.name}</button>`;
-                });
+                categories.forEach(c => { h += `<button onclick="window.setCat('${c.name}')" class="px-5 py-2.5 rounded-xl bg-[#1a1a1a] text-[10px] font-black uppercase whitespace-nowrap border border-white/5 ${curCat===c.name?'active-tab':''}">${c.name}</button>`; });
                 bar.innerHTML = h;
             }
-
             renderShop();
-
-            // Админка
             const aCat = document.getElementById('admin-categories-list');
-            if(aCat) {
-                aCat.innerHTML = categories.map(c => `
-                    <div class="flex gap-2 bg-black/40 p-2 rounded-xl border border-white/5 items-center">
-                        <input id="cat-input-${c.id}" value="${c.name}" class="flex-grow bg-transparent text-sm font-bold uppercase outline-none text-white px-2">
-                        <button onclick="window.updateCategory('${c.id}')" class="text-[#4ade80] font-black text-[9px] uppercase px-2">SAVE</button>
-                        <button onclick="window.delCategory('${c.id}')" class="text-red-500 font-black text-[9px] uppercase px-2">DEL</button>
-                    </div>
-                `).join('');
-            }
-            
+            if(aCat) aCat.innerHTML = categories.map(c => `
+                <div class="flex gap-2 bg-black/40 p-2 rounded-xl border border-white/5 items-center">
+                    <input id="cat-input-${c.id}" value="${c.name}" class="flex-grow bg-transparent text-sm font-bold uppercase outline-none text-white px-2">
+                    <button onclick="window.updateCategory('${c.id}')" class="text-[#4ade80] font-black text-[9px] px-2 py-2 bg-green-500/10 rounded-lg">SAVE</button>
+                    <button onclick="window.delCategory('${c.id}')" class="text-red-500 font-black text-[9px] px-2 py-2 bg-red-500/10 rounded-lg">DEL</button>
+                </div>`).join('');
             const aProd = document.getElementById('admin-products-list');
-            if(aProd) {
-                aProd.innerHTML = products.map(p => `
-                    <div class="bg-black/40 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
-                        <div class="w-1/2">
+            if(aProd) aProd.innerHTML = products.map(p => `
+                <div class="bg-black/40 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
+                    <div class="flex items-center gap-3 w-1/2">
+                        <span class="text-xl p-1 rounded" style="background-color: ${p.bgColor}">${p.emoji || '📦'}</span>
+                        <div class="truncate">
                             <p class="text-[8px] text-[#fbbf24] font-black uppercase">${p.category}</p>
-                            <p class="text-[11px] font-bold uppercase truncate text-white">${p.name}</p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <input type="number" value="${p.stock}" onchange="window.updateStock('${p.id}', this.value)" class="w-12 bg-black/50 text-center rounded-lg text-xs py-2 font-bold outline-none border border-white/5 text-white">
-                            <button onclick="window.delProduct('${p.id}')" class="text-red-500 font-black px-2">✕</button>
+                            <p class="text-[11px] font-bold uppercase text-white truncate">${p.name}</p>
                         </div>
                     </div>
-                `).join('');
-            }
-
+                    <div class="flex items-center gap-3">
+                        <input type="number" value="${p.stock}" onchange="window.updateStock('${p.id}', this.value)" class="w-10 bg-black/50 text-center rounded-lg text-xs py-2 font-bold outline-none border border-white/5 text-white">
+                        <button onclick="window.delProduct('${p.id}')" class="text-red-500 font-black px-3 py-2 bg-red-500/10 rounded-lg text-[10px]">DEL</button>
+                    </div>
+                </div>`).join('');
             const sel = document.getElementById('prod-cat');
             if(sel) sel.innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
             if(document.getElementById('admin-card-input')) document.getElementById('admin-card-input').value = settings.cardNum || '';
@@ -450,9 +405,7 @@
         db.collection('settings').doc('general').onSnapshot(d => { if(d.exists) settings = d.data(); render(); });
         db.collection('categories').orderBy('createdAt','asc').onSnapshot(s => { categories = s.docs.map(d=>({id:d.id,...d.data()})); render(); });
         db.collection('products').orderBy('createdAt','desc').onSnapshot(s => { products = s.docs.map(d=>({id:d.id,...d.data()})); render(); });
-
     </script>
 </body>
 </html>
-
 
